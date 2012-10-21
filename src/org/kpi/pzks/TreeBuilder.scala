@@ -11,36 +11,40 @@ case class Const(v: Double) extends Element;
 case class Var(v: String) extends Element;
 case class Ob() extends Element
 case class Cb() extends Element
+case class Expr(elements: List[Element]) extends Element
 
 object TreeBuilder extends App {
 
   val s = "abc+bcd-5*((abdc*(546.34-3)+3)/2)"
 
-  val elements = parseString(s).toList.map(x => x match {
-    case d: Dot => new Digits
-    case d: TailDigits => new Digits
-    case other => other
-  })
-  println(elements)
+  //  println(elements)
 
-  val zipped = elements.tail.zip(s.toList)
-  println(zipped)
+  //  println(zipped)
 
-  def groupElements(seq: Seq[(Node, Char)]) = {
-    val list = seq.toList
+  def groupElements(nodes: Seq[Node], str: String) = {
+
+    val elements = nodes.toList.map(x => x match {
+      case d: Dot => new Digits
+      case d: TailDigits => new Digits
+      case other => other
+    })
+
+    val zipped = elements.tail.zip(s.toList)
+
+//    val list = nodes.toList
 
     def buildRecur(nodes: List[(Node, Char)], res: List[Element]): (List[(Node, Char)], List[Element]) = {
-      
-      if(nodes.isEmpty){
+
+      if (nodes.isEmpty) {
         return (nodes, res)
       }
-      
+
       val firstChar = nodes.head._1;
-      
+
       firstChar match {
-        case d:OpenBrace =>
+        case d: OpenBrace =>
           return buildRecur(nodes.tail, new Ob :: res)
-        case d:CloseBrace => 
+        case d: CloseBrace =>
           return buildRecur(nodes.tail, new Cb :: res)
         case _ =>
       }
@@ -65,10 +69,17 @@ object TreeBuilder extends App {
       }
     }
 
-    buildRecur(list, List[Element]())._2.reverse
+    buildRecur(zipped, List[Element]())._2.reverse
 
   }
+  
+//  def buildSimpleTree(src: List[Element])={
+//    
+//  }
 
-  println(groupElements(zipped))
+  val nodes = parseString(s)
+  
+  
+  println(groupElements(nodes,s))
 
 }
