@@ -2,7 +2,7 @@ package org.kpi.pzks
 
 import scala.collection.mutable.ListBuffer
 
-object Parser extends App {
+object Parser {
 
   val digits = '0' to '9'
   val symbols = ('a' to 'z') ++ ('A' to 'Z')
@@ -169,17 +169,19 @@ object Parser extends App {
       }
     }
 
-    val chars = s.toList :+ '\n'
+    val chars = s.replaceAll(" *", "").toList :+ '\n'
     parseRecur(chars, new Start)
     buf
   }
   
-//  val s = "(2+3)-(4-5)"
-  val s = "-2+(3/a*(2-3))-(-23.3+(-1))"
-  
-  
-  val q = parseString(s.replaceAll(" *", ""));
-  println(q)
+////  val s = "(2+3)-(4-5)"s
+//  val s = "-2+(3/a*(2-3))-(-23.3+(-1))"
+//  
+//  
+//  val q = parseString(s);
+//  println(q)
+//  
+//  TreeBuilder.main(null)
   
   
 
