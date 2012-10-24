@@ -16,6 +16,8 @@ case class Expr(elements: List[Element]) extends Element{
     case List(_, Op(o), _) => true
     case _ => false
   }
+  
+  override def toString = "Expr(%s)".format(elements.mkString(", "))
 }
 
 
@@ -105,14 +107,13 @@ object TreeBuilder extends App {
     
   }
   
-  def applyToAll(f:(List[Element])=>Expr)(ex: Expr):Expr={
-    val list = ex.elements;
-    val r = list.map(_ match{
+  def applyToAll(f:(List[Element])=>List[Element])(list: List[Element]):List[Element]={
+    val q = list.map{
       case e:Expr =>
-        applyToAll(f)(e)
-      case any => any
-    })
-    Expr(r)
+        Expr(applyToAll(f)(e.elements))
+      case el:Element => el
+    }
+    f(q)
   }
   
   def groupBy[A](f: (A,A)=>Boolean)(elements: List[A])={
@@ -148,7 +149,7 @@ object TreeBuilder extends App {
     }
     
     val opGroups = groupBy((x:(Op,Int),y:(Op,Int)) => getGroup(x._1)==getGroup(y._1))(operations)
-    val slice = opGroups.find(x => getGroup(x(1)._1)==1) match{
+    val slice = opGroups.find(x => getGroup(x(0)._1)==1) match{
       case Some(mulList) =>
         mulList
       case None =>
@@ -199,14 +200,18 @@ object TreeBuilder extends App {
   
   
 //  val s = "abc+(123-4/abc+(2-1))"
-  val s = "a+b+c*d*e+f+g"
+  val s = "a+b*c*(b+c*d)+x"
+    val ss = "b+c*d"
 //  val s = "abc+5/3-r"
   val parsed = parseString(s)
   val elements = groupElements(parsed, s)
   val simpleTree = buildSimpleTree(elements)
 //  val reformated = reformatExpression(Expr(simpleTree));
-  val qq = collectSimilar(simpleTree)
+  val qq = applyToAll(collectSimilar)(simpleTree) //collectSimilar(simpleTree)
 //  val similar = applyToAll(qq)(Expr(simpleTree))
+  
+//  val qqq=collectSimilar(buildSimpleTree(groupElements(parseString(ss), ss)))
+  val qqq= applyToAll(collectSimilar)(buildSimpleTree(groupElements(parseString(ss), ss)))
   
   println(s)
   println(qq)
