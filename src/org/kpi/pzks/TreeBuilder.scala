@@ -135,19 +135,24 @@ object TreeBuilder extends App {
   
 //  val groupByType = groupBy((x,y) =>x.getClass == y.getClass()) _
   
-  def collectSimilar(l:List[Element]):List[Element]={
-    def getGroup(e:Element):Int={
+  def getGroup(e:Element):Int={
       e match{
         case Op('/') | Op('*')=> 1
         case Op('+') | Op('-')=> 2
         case _ => 3
       }
     }
-
+  
+  def getOperationWithIndices(l:List[Element])={
     val operations = l.zip(l.indices)collect{
       case (o:Op, i:Int) => (o, i)
     }
     
+    operations
+  }
+  
+  def collectSimilar(l:List[Element]):List[Element]={
+    val operations = getOperationWithIndices(l);
     val opGroups = groupBy((x:(Op,Int),y:(Op,Int)) => getGroup(x._1)==getGroup(y._1))(operations)
     val slice = opGroups.find(x => getGroup(x(0)._1)==1) match{
       case Some(mulList) =>
@@ -170,37 +175,51 @@ object TreeBuilder extends App {
     }
   }
   
-  def reformatExpression(ex : Expr):Expr={
-    if(ex.isPure){
-      return ex
+  def colapseDivides(list:List[Element]):List[Element]={
+    val ops = getOperationWithIndices(list);
+    val divides = ops.collect{
+      case q@(Op('/'),i) => q
     }
     
-    def findMulDiv(ex: Expr)={
-      val list = ex.elements
-      list.find(x => x== Op('/') || x == Op('*')) match{
-        case None => ex
-        case Some(el) =>
-          val index = list.indexOf(el)
-          val before = list.take(index - 1)
-          val newExpr = Expr(list.drop(index -1).take(3))
-          val after = list.drop(index+2)
-          
-          val newList = before ::: newExpr :: after
-          Expr(newList)
+    
+    
+    
+    
+    null
+  }
+
+  def pair(list: List[Element]): List[Element] = {
+    if (Expr(list).isPure) {
+      list
+    } else {
+      val(start, rest) = list.splitAt(3);
+      val exp = Expr(start)
+      //TODO add check
+      val end = if(rest.size>3){
+        rest.head :: pair(rest.tail)
+      }else{
+        rest
+      }
+      exp :: end
+    }
+  }
+  
+  def applyLoop(f:(List[Element])=>List[Element])(list: List[Element]):List[Element]={
+    def recur(l: List[Element]):List[Element]={
+      val q = f(l)
+      if(q == l){
+        q
+      }else{
+        recur(q)
       }
     }
-    
-//    val newExpr = 
-    
-    
-    
-    
-    findMulDiv(ex);
+    recur(list)
   }
   
   
 //  val s = "abc+(123-4/abc+(2-1))"
-  val s = "a+b*c*(b+c*d)+x"
+//  val s = "a+b*c*(b+c*d)+x"
+    val s = "a+b+c+d+e"
     val ss = "b+c*d"
 //  val s = "abc+5/3-r"
   val parsed = parseString(s)
@@ -213,8 +232,10 @@ object TreeBuilder extends App {
 //  val qqq=collectSimilar(buildSimpleTree(groupElements(parseString(ss), ss)))
   val qqq= applyToAll(collectSimilar)(buildSimpleTree(groupElements(parseString(ss), ss)))
   
+  val qqqq = applyLoop(pair)(qq)
+  
   println(s)
-  println(qq)
+  println(qqqq)
 
 //  val nodes = parseString(s)
   
