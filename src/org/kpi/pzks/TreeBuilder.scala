@@ -105,6 +105,70 @@ object TreeBuilder extends App {
     
   }
   
+  def applyToAll(f:(List[Element])=>Expr)(ex: Expr):Expr={
+    val list = ex.elements;
+    val r = list.map(_ match{
+      case e:Expr =>
+        applyToAll(f)(e)
+      case any => any
+    })
+    Expr(r)
+  }
+  
+  def groupBy[A](f: (A,A)=>Boolean)(elements: List[A])={
+    def recur(result:List[List[A]], list:List[A]):List[List[A]]={
+      val head = list.head
+      val (first, last) = list.span(f(head,_))
+      
+      val res = first :: result
+      
+      if(last.isEmpty){
+        return res.reverse
+      }else{
+        return recur(res, last)
+      }
+    }
+    
+    recur(List[List[A]](), elements)
+  }
+  
+//  val groupByType = groupBy((x,y) =>x.getClass == y.getClass()) _
+  
+  def collectSimilar(l:List[Element]):List[Element]={
+    def getGroup(e:Element):Int={
+      e match{
+        case Op('/') | Op('*')=> 1
+        case Op('+') | Op('-')=> 2
+        case _ => 3
+      }
+    }
+
+    val operations = l.zip(l.indices)collect{
+      case (o:Op, i:Int) => (o, i)
+    }
+    
+    val opGroups = groupBy((x:(Op,Int),y:(Op,Int)) => getGroup(x._1)==getGroup(y._1))(operations)
+    val slice = opGroups.find(x => getGroup(x(1)._1)==1) match{
+      case Some(mulList) =>
+        mulList
+      case None =>
+        opGroups(0)
+    }
+    
+    val first = math.max(slice.head._2-1, 0)
+    val last = slice.last._2+1
+    
+    if(first==0 &&last == l.size-1){
+      return l;
+    }else{
+      val before = l.take(first)
+      val middle = Expr(l.slice(first, last+1))
+      val after = l.drop(last+1)
+      val result = before ::: middle :: after
+      return collectSimilar(result)
+    }
+  }
+  
   def reformatExpression(ex : Expr):Expr={
     if(ex.isPure){
       return ex
@@ -134,15 +198,18 @@ object TreeBuilder extends App {
   }
   
   
-  val s = "abc+(123-4/abc+(2-1))"
+//  val s = "abc+(123-4/abc+(2-1))"
+  val s = "a+b+c*d*e+f+g"
 //  val s = "abc+5/3-r"
   val parsed = parseString(s)
   val elements = groupElements(parsed, s)
   val simpleTree = buildSimpleTree(elements)
-  val reformated = reformatExpression(Expr(simpleTree));
+//  val reformated = reformatExpression(Expr(simpleTree));
+  val qq = collectSimilar(simpleTree)
+//  val similar = applyToAll(qq)(Expr(simpleTree))
   
   println(s)
-  println(reformated)
+  println(qq)
 
 //  val nodes = parseString(s)
   
