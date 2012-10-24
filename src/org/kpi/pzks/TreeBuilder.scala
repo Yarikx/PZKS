@@ -11,7 +11,13 @@ case class Const(v: Double) extends Element;
 case class Var(v: String) extends Element;
 case class Ob extends Element
 case class Cb extends Element
-case class Expr(elements: List[Element]) extends Element
+case class Expr(elements: List[Element]) extends Element{
+  def isPure = elements match {
+    case List(_, Op(o), _) => true
+    case _ => false
+  }
+}
+
 
 object TreeBuilder extends App {
 
@@ -99,13 +105,44 @@ object TreeBuilder extends App {
     
   }
   
+  def reformatExpression(ex : Expr):Expr={
+    if(ex.isPure){
+      return ex
+    }
+    
+    def findMulDiv(ex: Expr)={
+      val list = ex.elements
+      list.find(x => x== Op('/') || x == Op('*')) match{
+        case None => ex
+        case Some(el) =>
+          val index = list.indexOf(el)
+          val before = list.take(index - 1)
+          val newExpr = Expr(list.drop(index -1).take(3))
+          val after = list.drop(index+2)
+          
+          val newList = before ::: newExpr :: after
+          Expr(newList)
+      }
+    }
+    
+//    val newExpr = 
+    
+    
+    
+    
+    findMulDiv(ex);
+  }
+  
   
   val s = "abc+(123-4/abc+(2-1))"
+//  val s = "abc+5/3-r"
   val parsed = parseString(s)
   val elements = groupElements(parsed, s)
+  val simpleTree = buildSimpleTree(elements)
+  val reformated = reformatExpression(Expr(simpleTree));
   
   println(s)
-  println(buildSimpleTree(elements))
+  println(reformated)
 
 //  val nodes = parseString(s)
   
