@@ -194,7 +194,7 @@ object TreeBuilder extends App {
         return list
     }
     
-    val first = math.max(slice.head._2-1, 0)
+    val first = math.max(slice.head._2+1, 0)
     val last = slice.last._2 + 1
     
     val before = list.take(first)
@@ -202,17 +202,19 @@ object TreeBuilder extends App {
       case Op('/') => Op('*')
       case x => x
     }
-    val middle = List(Op('/'),Expr(fullSlice))
+    val middle = Expr(fullSlice)
     val after = list.drop(last + 1)
-    val result = before ::: middle ::: after
+    val result = before ::: middle :: after
     result
   }
   
   def colapseUnariExp(list: List[Element]): List[Element] = {
-    list.map{
-      case Expr(List(e:Expr)) => e
-      case x => x
+    val t = list.map{
+      case Expr(List(e:Expr)) => List(e)
+      case Expr(List(o:Op, e:Expr))=> List(o,e)
+      case x => List(x)
     }
+    t.flatten
   }
 
   def pair(list: List[Element]): List[Element] = {
@@ -298,10 +300,14 @@ object TreeBuilder extends App {
 
     null
   }
+  
+  def idoidoidoidoido(list:List[Element])={
+    
+  }
 
   //  val s = "abc+(123-4/abc+(2-1))"
   //  val s = "a+b*c*(b+c*d)+x"
-  val s = "a+b+c*b*d-c+d+e"
+  val s = "a+b+c/b/d/6/q-c+d+e"
   //  val s = "abc+5/3-r"
   val parsed = parseString(s)
   val elements = groupElements(parsed, s)
@@ -309,19 +315,25 @@ object TreeBuilder extends App {
   println("simple tree")
   println(simpleTree)
   
-  val qq = applyToAll(collectSimilar)(simpleTree) //collectSimilar(simpleTree)
+  val similar = applyToAll(collectSimilar)(simpleTree) //collectSimilar(simpleTree)
   
-  val qqq = applyToAll(colapseDivides)(qq)
+  val divides = applyToAll(colapseDivides)(similar)
   
-  val qqqq = applyLoop(applyToAll(pair))(qq)
-
+  val fixed = applyToAll(colapseUnariExp)(divides)
+  
+  val fixedAgain= applyToAll(collectSimilar)(fixed)
+  
+  val paired = applyLoop(applyToAll(pair))(fixedAgain)
+  
   println(s)
   println("collectSimilar")
-  println(qq)
-//  println("colapse Divides")
-//  println(qqq)
+  println(similar)
+  println("colapse Divides")
+  println(divides)
+  println("colapse unari")
+  println(fixed)
   println("pair")
-  println(qqqq)
-  buildGraphWizFile(Expr(qqqq))
+  println(paired)
+  buildGraphWizFile(Expr(paired))
 
 }
