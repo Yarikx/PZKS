@@ -186,19 +186,24 @@ object TreeBuilder extends App {
 
   def colapseDivides(list: List[Element]): List[Element] = {
     val ops = getOperationWithIndices(list);
-    val opGroups = groupBy((x: (Op, Int), y: (Op, Int)) => getGroup(x._1) == getGroup(y._1))(ops)
+    val opGroups = groupBy((x: (Op, Int), y: (Op, Int)) => x._1 == y._1)(ops)
     val slice = opGroups.find(x => x(0)._1 == Op('/')) match {
-      case Some(divList) if(divList.size>1) =>
-        divList
+      case Some(divList) =>
+        if (divList.size > 1) {
+          divList
+        } else {
+          return list
+        }
+
       case None =>
         return list
     }
-    
-    val first = math.max(slice.head._2+1, 0)
+
+    val first = math.max(slice.head._2 + 1, 0)
     val last = slice.last._2 + 1
-    
+
     val before = list.take(first)
-    val fullSlice = list.slice(first, last+1).map{
+    val fullSlice = list.slice(first, last + 1).map {
       case Op('/') => Op('*')
       case x => x
     }
@@ -207,35 +212,44 @@ object TreeBuilder extends App {
     val result = before ::: middle :: after
     result
   }
-  
+
   def colapseMinuses(list: List[Element]): List[Element] = {
     val ops = getOperationWithIndices(list);
     val opGroups = groupBy((x: (Op, Int), y: (Op, Int)) => x._1 == y._1)(ops)
-    val slice = opGroups.find(x => x(0)._1 == Op('-')) match {
-      case Some(divList) if(divList.size>1) =>
-        divList
+    val found = opGroups.find(x => x(0)._1 == Op('-'))
+    val sliceOp =  found match {
+      case Some(divList)=>
+        if (divList.size > 1) {
+          Some(divList)
+        } else {
+          None
+        }
       case None =>
-        return list
+        None      
     }
-    
-    val first = math.max(slice.head._2+1, 0)
-    val last = slice.last._2 + 1
-    
-    val before = list.take(first)
-    val fullSlice = list.slice(first, last+1).map{
-      case Op('-') => Op('+')
-      case x => x
+    sliceOp match {
+      case Some(slice) =>
+        val first = math.max(slice.head._2 + 1, 0)
+        val last = slice.last._2 + 1
+
+        val before = list.take(first)
+        val fullSlice = list.slice(first, last + 1).map {
+          case Op('-') => Op('+')
+          case x => x
+        }
+        val middle = Expr(fullSlice)
+        val after = list.drop(last + 1)
+        val result = before ::: middle :: after
+        result
+      case None => list
     }
-    val middle = Expr(fullSlice)
-    val after = list.drop(last + 1)
-    val result = before ::: middle :: after
-    result
+
   }
-  
+
   def colapseUnariExp(list: List[Element]): List[Element] = {
-    val t = list.map{
-      case Expr(List(e:Expr)) => List(e)
-      case Expr(List(o:Op, e:Expr))=> List(o,e)
+    val t = list.map {
+      case Expr(List(e: Expr)) => List(e)
+      case Expr(List(o: Op, e: Expr)) => List(o, e)
       case x => List(x)
     }
     t.flatten
@@ -250,9 +264,9 @@ object TreeBuilder extends App {
       //TODO add check
       val end = if (rest.size > 3) {
         val exTail = Expr(rest tail)
-        if(exTail isPure){
+        if (exTail isPure) {
           List(rest.head, exTail)
-        }else{
+        } else {
           rest.head :: pair(rest.tail)
         }
       } else {
@@ -310,9 +324,9 @@ object TreeBuilder extends App {
       }
     }
     buildLinks(converted)
-    buf++="}"
+    buf ++= "}"
     println(buf.toString)
-    
+
     val q = new FileOutputStream(new File("/tmp/example.dot"))
     q.write(buf.toString.map(_.toByte).toArray)
     q.close()
@@ -324,44 +338,35 @@ object TreeBuilder extends App {
 
     null
   }
-  
-  def idoidoidoidoido(list:List[Element])={
-    
+
+  def applyAll(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
+    fs.foldLeft(list)((el, f) => { val q = applyToAll(f)(el); println(q); q })
   }
 
-  //  val s = "abc+(123-4/abc+(2-1))"
+  val optomizations = applyAll(
+    collectSimilar,
+    colapseDivides,
+    colapseUnariExp,
+    collectSimilar,
+    colapseMinuses,
+    colapseUnariExp,
+    collectSimilar) _
+
+  val s = "a+b/(2+m+x/y+3)+c-d-e-f"
   //  val s = "a+b*c*(b+c*d)+x"
-  val s = "a+b-c-t-j+e"
+  //  val s = "a+b-c-t-j+e"
   //  val s = "abc+5/3-r"
   val parsed = parseString(s)
   val elements = groupElements(parsed, s)
   val simpleTree = buildSimpleTree(elements)
   println("simple tree")
   println(simpleTree)
-  
-  val similar = applyToAll(collectSimilar)(simpleTree) //collectSimilar(simpleTree)
-  
-  val divides = applyToAll(colapseDivides)(similar)
-  
-  val fixed = applyToAll(colapseUnariExp)(divides)
-  
-  val fixedAgain= applyToAll(collectSimilar)(fixed)
-  
-  val minuses = applyToAll(colapseMinuses)(fixedAgain)
-  
-  val fixedM = applyToAll(colapseUnariExp)(minuses)
-  
-  val fixedAgain2= applyToAll(collectSimilar)(fixedM)
-  
-  val paired = applyLoop(applyToAll(pair))(fixedAgain2)
-  
+
+  val optimized = optomizations(simpleTree)
+
+  val paired = applyLoop(applyToAll(pair))(optimized)
+
   println(s)
-  println("collectSimilar")
-  println(similar)
-  println("colapse Divides")
-  println(divides)
-  println("colapse unari")
-  println(fixed)
   println("pair")
   println(paired)
   buildGraphWizFile(Expr(paired))
