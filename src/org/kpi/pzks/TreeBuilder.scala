@@ -208,6 +208,30 @@ object TreeBuilder extends App {
     result
   }
   
+  def colapseMinuses(list: List[Element]): List[Element] = {
+    val ops = getOperationWithIndices(list);
+    val opGroups = groupBy((x: (Op, Int), y: (Op, Int)) => x._1 == y._1)(ops)
+    val slice = opGroups.find(x => x(0)._1 == Op('-')) match {
+      case Some(divList) if(divList.size>1) =>
+        divList
+      case None =>
+        return list
+    }
+    
+    val first = math.max(slice.head._2+1, 0)
+    val last = slice.last._2 + 1
+    
+    val before = list.take(first)
+    val fullSlice = list.slice(first, last+1).map{
+      case Op('-') => Op('+')
+      case x => x
+    }
+    val middle = Expr(fullSlice)
+    val after = list.drop(last + 1)
+    val result = before ::: middle :: after
+    result
+  }
+  
   def colapseUnariExp(list: List[Element]): List[Element] = {
     val t = list.map{
       case Expr(List(e:Expr)) => List(e)
@@ -307,7 +331,7 @@ object TreeBuilder extends App {
 
   //  val s = "abc+(123-4/abc+(2-1))"
   //  val s = "a+b*c*(b+c*d)+x"
-  val s = "a+b+c/b/d/6/q-c+d+e"
+  val s = "a+b-c-t-j+e"
   //  val s = "abc+5/3-r"
   val parsed = parseString(s)
   val elements = groupElements(parsed, s)
@@ -323,7 +347,13 @@ object TreeBuilder extends App {
   
   val fixedAgain= applyToAll(collectSimilar)(fixed)
   
-  val paired = applyLoop(applyToAll(pair))(fixedAgain)
+  val minuses = applyToAll(colapseMinuses)(fixedAgain)
+  
+  val fixedM = applyToAll(colapseUnariExp)(minuses)
+  
+  val fixedAgain2= applyToAll(collectSimilar)(fixedM)
+  
+  val paired = applyLoop(applyToAll(pair))(fixedAgain2)
   
   println(s)
   println("collectSimilar")
