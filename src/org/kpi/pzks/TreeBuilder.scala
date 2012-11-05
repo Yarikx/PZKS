@@ -368,16 +368,25 @@ object TreeBuilder extends App {
   def applyOptimisators(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
     fs.foldLeft(list)((el, f) => { val q = safeOptimization(f)(el); println(q); q })
   }
+  
+  val highOptimisation = ((f: List[Element] =>(List[Element])) =>  applyOptimisators(
+      f,
+      collectSimilar,
+      colapseMinuses,
+      colapseDivides,
+      collectSimilar
+    )_
+  )
+  
+  def applyHighOptimisators(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
+    fs.foldLeft(list)((el, f) => { val q = safeOptimization(f)(el); println(q); q })
+  }
 
-  val optomizations = applyOptimisators(
+  val optomizations = applyHighOptimisators(
     collectSimilar,
-    colapseDivides,
-    colapseMinuses,
-    operateConstants,
-    colapseDivides,
-    colapseMinuses) _
+    operateConstants) _
 
-  val s = "5/2+3"
+  val s = "a+5/2+3"
 //    val s = "a+b*c*(b+c*d)+x"
   //  val s = "a+b-c-t-j+e"
   //  val s = "abc+5/3-r"
