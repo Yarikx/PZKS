@@ -184,10 +184,10 @@ object TreeBuilder extends App {
     }
   }
 
-  def colapseDivides(list: List[Element]): List[Element] = {
+  def colapseSecondOp(op: Op, oposite: Op)(list: List[Element]): List[Element] = {
     val ops = getOperationWithIndices(list);
     val opGroups = groupBy((x: (Op, Int), y: (Op, Int)) => x._1 == y._1)(ops)
-    val slice = opGroups.find(x => x(0)._1 == Op('/')) match {
+    val slice = opGroups.find(x => x(0)._1 == op) match {
       case Some(divList) =>
         if (divList.size > 1) {
           divList
@@ -204,7 +204,7 @@ object TreeBuilder extends App {
 
     val before = list.take(first)
     val fullSlice = list.slice(first, last + 1).map {
-      case Op('/') => Op('*')
+      case oper@Op(q) if(oper == op) => oposite
       case x => x
     }
     val middle = Expr(fullSlice)
@@ -213,38 +213,11 @@ object TreeBuilder extends App {
     result
   }
 
-  def colapseMinuses(list: List[Element]): List[Element] = {
-    val ops = getOperationWithIndices(list);
-    val opGroups = groupBy((x: (Op, Int), y: (Op, Int)) => x._1 == y._1)(ops)
-    val found = opGroups.find(x => x(0)._1 == Op('-'))
-    val sliceOp =  found match {
-      case Some(divList)=>
-        if (divList.size > 1) {
-          Some(divList)
-        } else {
-          None
-        }
-      case None =>
-        None      
-    }
-    sliceOp match {
-      case Some(slice) =>
-        val first = math.max(slice.head._2 + 1, 0)
-        val last = slice.last._2 + 1
+  def colapseDivides(list: List[Element]): List[Element] =
+    colapseSecondOp(Op('/'), Op('*'))(list)
 
-        val before = list.take(first)
-        val fullSlice = list.slice(first, last + 1).map {
-          case Op('-') => Op('+')
-          case x => x
-        }
-        val middle = Expr(fullSlice)
-        val after = list.drop(last + 1)
-        val result = before ::: middle :: after
-        result
-      case None => list
-    }
-
-  }
+  def colapseMinuses(list: List[Element]): List[Element] =
+    colapseSecondOp(Op('-'), Op('+'))(list)
 
   def colapseUnariExp(list: List[Element]): List[Element] = {
     val t = list.map {
