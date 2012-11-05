@@ -3,11 +3,9 @@ package org.kpi.pzks
 import java.io.File
 import java.io.FileOutputStream
 import java.lang.Double
-
 import scala.collection.mutable.Map
 import scala.collection.mutable.StringBuilder
 import scala.util.Random
-
 import org.kpi.pzks.Parser.CloseBrace
 import org.kpi.pzks.Parser.Digits
 import org.kpi.pzks.Parser.Dot
@@ -17,6 +15,7 @@ import org.kpi.pzks.Parser.Operation
 import org.kpi.pzks.Parser.Symbols
 import org.kpi.pzks.Parser.TailDigits
 import org.kpi.pzks.Parser.parseString
+import scala.annotation.tailrec
 
 class Element;
 
@@ -128,7 +127,12 @@ object TreeBuilder extends App {
   }
 
   def groupBy[A](f: (A, A) => Boolean)(elements: List[A]) = {
+    
+    @tailrec
     def recur(result: List[List[A]], list: List[A]): List[List[A]] = {
+      if(list.isEmpty){
+        return result.reverse
+      }
       val head = list.head
       val (first, last) = list.span(f(head, _))
 
@@ -313,7 +317,13 @@ object TreeBuilder extends App {
         Oper(o, ql, qr)
     }
 
-    val converted = convert(e)
+    val checked = e match{
+      case Expr(List(Expr(List(el:Element)))) => el
+      case Expr(List(el:Element)) => el
+      case x => x
+    }
+    
+    val converted = convert(checked)
     def buildLinks(ex: El) {
 
       ex match {
@@ -367,7 +377,7 @@ object TreeBuilder extends App {
     colapseDivides,
     colapseMinuses) _
 
-  val s = "a+5/2+3+b"
+  val s = "5/2+3"
 //    val s = "a+b*c*(b+c*d)+x"
   //  val s = "a+b-c-t-j+e"
   //  val s = "abc+5/3-r"
@@ -379,7 +389,7 @@ object TreeBuilder extends App {
 
   val optimized = applyLoop(optomizations)(simpleTree)
 
-  val paired = applyLoop(applyToAll(pair))(optimized)
+  val paired = applyToAll(pair)(optimized)
 
   println(s)
   println("pair")
