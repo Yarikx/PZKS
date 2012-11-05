@@ -162,6 +162,9 @@ object TreeBuilder extends App {
 
   def collectSimilar(l: List[Element]): List[Element] = {
     val operations = getOperationWithIndices(l);
+    if(operations.isEmpty){
+      return l
+    }
     val opGroups = groupBy((x: (Op, Int), y: (Op, Int)) => getGroup(x._1) == getGroup(y._1))(operations)
     val slice = opGroups.find(x => getGroup(x(0)._1) == 1) match {
       case Some(mulList) =>
@@ -222,10 +225,39 @@ object TreeBuilder extends App {
   def colapseUnariExp(list: List[Element]): List[Element] = {
     val t = list.map {
       case Expr(List(e: Expr)) => List(e)
+      case Expr(List(e: Element)) => List(e)
       case Expr(List(o: Op, e: Expr)) => List(o, e)
       case x => List(x)
     }
     t.flatten
+  }
+  
+  def operate(c:Char, c1:Double, c2:Double)={
+    c match{
+      case '+' => c1+c2
+      case '-' => c1-c2
+      case '/' => c1/c2
+      case '*' => c1*c2
+    }
+  }
+  
+  def operateConstants(list: List[Element]): List[Element] ={
+    val found = list.sliding(3).find({
+      case List(Const(c1), Op(o), Const(c2)) => true
+      case _ => false
+    })
+    
+    found match{
+      case None => return list;
+      case Some(slice@List(Const(c1), Op(o), Const(c2))) =>
+        val res = operate(o, c1,c2)
+        
+        val start = list.indexOfSlice(slice)
+        
+        list.take(start) ::: Const(res) :: list.drop(start+3)
+    }
+    
+    
   }
 
   def pair(list: List[Element]): List[Element] = {
@@ -315,18 +347,28 @@ object TreeBuilder extends App {
   def applyAll(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
     fs.foldLeft(list)((el, f) => { val q = applyToAll(f)(el); println(q); q })
   }
+  
+  val safeOptimization = ((f: List[Element] =>(List[Element])) =>  applyAll(
+      f,
+      colapseUnariExp,
+      collectSimilar
+    )_
+  )
+  
+  def applyOptimisators(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
+    fs.foldLeft(list)((el, f) => { val q = safeOptimization(f)(el); println(q); q })
+  }
 
-  val optomizations = applyAll(
+  val optomizations = applyOptimisators(
     collectSimilar,
     colapseDivides,
-    colapseUnariExp,
-    collectSimilar,
     colapseMinuses,
-    colapseUnariExp,
-    collectSimilar) _
+    operateConstants,
+    colapseDivides,
+    colapseMinuses) _
 
-  val s = "a+b/(2+m+x/y+3)+c-d-e-f"
-  //  val s = "a+b*c*(b+c*d)+x"
+  val s = "a+5/2+3+b"
+//    val s = "a+b*c*(b+c*d)+x"
   //  val s = "a+b-c-t-j+e"
   //  val s = "abc+5/3-r"
   val parsed = parseString(s)
@@ -335,7 +377,7 @@ object TreeBuilder extends App {
   println("simple tree")
   println(simpleTree)
 
-  val optimized = optomizations(simpleTree)
+  val optimized = applyLoop(optomizations)(simpleTree)
 
   val paired = applyLoop(applyToAll(pair))(optimized)
 
