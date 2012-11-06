@@ -394,7 +394,7 @@ object TreeBuilder extends App {
     collectSimilar,
     operateConstants) _
 
-  val s = "a*(b+c)"
+  val s = "a*(b+c)-d/(e+f)"
 //    val s = "a+b*c*(b+c*d)+x"
   //  val s = "a+b-c-t-j+e"
   //  val s = "abc+5/3-r"
@@ -406,8 +406,9 @@ object TreeBuilder extends App {
 
   val optimized = applyLoop(optomizations)(simpleTree)
   
-  println("braces "+findClosedBraces(optimized))
-  println("braces "+unbrace(Const(5), Op('*'), Expr(List(Var("a"),Op('+'),Var("b")))));
+  println("braces ************");
+  createAllVariantsOfBraces(optimized).foreach(println)
+  println("braces ************");
 
   val paired = applyToAll(pair)(optimized)
 
