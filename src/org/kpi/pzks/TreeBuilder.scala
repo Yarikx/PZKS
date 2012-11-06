@@ -3,9 +3,13 @@ package org.kpi.pzks
 import java.io.File
 import java.io.FileOutputStream
 import java.lang.Double
+
+import scala.annotation.tailrec
 import scala.collection.mutable.Map
 import scala.collection.mutable.StringBuilder
 import scala.util.Random
+
+import org.kpi.pzks.BraceOpener._;
 import org.kpi.pzks.Parser.CloseBrace
 import org.kpi.pzks.Parser.Digits
 import org.kpi.pzks.Parser.Dot
@@ -15,11 +19,12 @@ import org.kpi.pzks.Parser.Operation
 import org.kpi.pzks.Parser.Symbols
 import org.kpi.pzks.Parser.TailDigits
 import org.kpi.pzks.Parser.parseString
-import scala.annotation.tailrec
 
 class Element;
 
-case class Op(c: Char) extends Element;
+case class Op(c: Char) extends Element{
+  def group = TreeBuilder.getGroup(this)
+}
 case class Const(v: Double) extends Element;
 case class Var(v: String) extends Element;
 case class Ob extends Element
@@ -245,6 +250,7 @@ object TreeBuilder extends App {
     }
   }
   
+  //High level
   def operateConstants(list: List[Element]): List[Element] ={
     val found = list.sliding(3).find({
       case List(Const(c1), Op(o), Const(c2)) => true
@@ -263,6 +269,8 @@ object TreeBuilder extends App {
     
     
   }
+  
+  //other
 
   def pair(list: List[Element]): List[Element] = {
     if (Expr(list).isPure) {
@@ -379,14 +387,14 @@ object TreeBuilder extends App {
   )
   
   def applyHighOptimisators(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
-    fs.foldLeft(list)((el, f) => { val q = safeOptimization(f)(el); println(q); q })
+    fs.foldLeft(list)((el, f) => { val q = highOptimisation(f)(el); println(q); q })
   }
 
   val optomizations = applyHighOptimisators(
     collectSimilar,
     operateConstants) _
 
-  val s = "a+5/2+3"
+  val s = "a*(b+c)"
 //    val s = "a+b*c*(b+c*d)+x"
   //  val s = "a+b-c-t-j+e"
   //  val s = "abc+5/3-r"
@@ -397,6 +405,9 @@ object TreeBuilder extends App {
   println(simpleTree)
 
   val optimized = applyLoop(optomizations)(simpleTree)
+  
+  println("braces "+findClosedBraces(optimized))
+  println("braces "+unbrace(Const(5), Op('*'), Expr(List(Var("a"),Op('+'),Var("b")))));
 
   val paired = applyToAll(pair)(optimized)
 
