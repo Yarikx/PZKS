@@ -412,7 +412,7 @@ object TreeBuilder extends App {
   val optimized = applyLoop(optomizations)(simpleTree)
   
   println("braces ************");
-  createAllVariantsOfBraces(optimized).foreach(println)
+  collectLoop(optimized)(createAllVariantsOfBraces).foreach(println)
   println("braces ************");
 
   val paired = applyToAll(pair)(optimized)

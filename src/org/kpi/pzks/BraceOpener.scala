@@ -48,4 +48,16 @@ object BraceOpener {
     })
     opened
   }
+  
+  def collectLoop(elements: List[Element])(f: List[Element] => Set[List[Element]])={
+    def recur(lists: Set[List[Element]]):Set[List[Element]]={
+      val res = lists.flatMap(x => f(x)).toSet
+      if(res == lists){
+        res
+      }else{
+        recur(res)
+      }
+    }
+    recur(f(elements))
+  }
 }
