@@ -10,6 +10,7 @@ object BraceOpener {
       val oneSet = element match {
         case Expr(list) => {
           val variants = createAllVariantsOfBraces(list)
+          //TODO fix expressions like a*(b*c) => a*b*c
           val qq = variants.map(x => elements.updated(i, Expr(x)))
           qq
         }
@@ -51,7 +52,9 @@ object BraceOpener {
   
   def collectLoop(elements: List[Element])(f: List[Element] => Set[List[Element]])={
     def recur(lists: Set[List[Element]]):Set[List[Element]]={
-      val res = lists.flatMap(x => f(x)).toSet
+      val res = lists.flatMap(x => f(x).map(applyLoop(optomizations)(_))).toSet
+      res.foreach(println)
+      println("*****************************")
       if(res == lists){
         res
       }else{

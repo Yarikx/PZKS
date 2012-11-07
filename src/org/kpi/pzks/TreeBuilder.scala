@@ -368,7 +368,7 @@ object TreeBuilder extends App {
   }
 
   def applyAll(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
-    fs.foldLeft(list)((el, f) => { val q = applyToAll(f)(el); println(q); q })
+    fs.foldLeft(list)((el, f) => { val q = applyToAll(f)(el); q })
   }
   
   val safeOptimization = ((f: List[Element] =>(List[Element])) =>  applyAll(
@@ -379,7 +379,7 @@ object TreeBuilder extends App {
   )
   
   def applyOptimisators(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
-    fs.foldLeft(list)((el, f) => { val q = safeOptimization(f)(el); println(q); q })
+    fs.foldLeft(list)((el, f) => { val q = safeOptimization(f)(el); q })
   }
   
   val highOptimisation = ((f: List[Element] =>(List[Element])) =>  applyOptimisators(
@@ -392,14 +392,14 @@ object TreeBuilder extends App {
   )
   
   def applyHighOptimisators(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
-    fs.foldLeft(list)((el, f) => { val q = highOptimisation(f)(el); println(q); q })
+    fs.foldLeft(list)((el, f) => { val q = highOptimisation(f)(el); q })
   }
 
   val optomizations = applyHighOptimisators(
     collectSimilar,
     operateConstants) _
 
-  val s = "a*(b+c)-d/(e+f)"
+  val s = "a*(b+c*(d+e))-d/(e+f)"
 //    val s = "a+b*c*(b+c*d)+x"
   //  val s = "a+b-c-t-j+e"
   //  val s = "abc+5/3-r"
@@ -412,7 +412,8 @@ object TreeBuilder extends App {
   val optimized = applyLoop(optomizations)(simpleTree)
   
   println("braces ************");
-  collectLoop(optimized)(createAllVariantsOfBraces).foreach(println)
+  collectLoop(optimized)(createAllVariantsOfBraces)
+//  createAllVariantsOfBraces(optimized).foreach(println)
   println("braces ************");
 
   val paired = applyToAll(pair)(optimized)
