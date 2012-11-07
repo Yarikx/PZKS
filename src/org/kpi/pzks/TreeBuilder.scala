@@ -416,7 +416,7 @@ object TreeBuilder extends App {
     fixNested,
     operateConstants) _
 
-  val s = "a+(b*(c+(d*(e+f))))"
+  val s = "a+5*(3-d)"
   //    val s = "a+b*c*(b+c*d)+x"
   //  val s = "a+b-c-t-j+e"
   //  val s = "abc+5/3-r"

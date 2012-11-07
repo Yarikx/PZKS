@@ -52,8 +52,8 @@ object BraceOpener {
   
   def collectLoop(elements: List[Element])(f: List[Element] => Set[List[Element]])={
     def recur(lists: Set[List[Element]]):Set[List[Element]]={
-//      val res = lists.flatMap(x => f(x).map(applyLoop(optomizations)(_))).toSet
-      val res = lists.flatMap(x => f(x)).toSet
+      val res = lists.flatMap(x => f(x).map(applyLoop(optomizations)(_))).toSet
+//      val res = lists.flatMap(x => f(x)).toSet
       res.foreach(println)
       println("*****************************")
       if(res == lists){
