@@ -271,7 +271,25 @@ object TreeBuilder extends App {
         
         list.take(start) ::: Const(res) :: list.drop(start+3)
     }
-    
+  }
+  
+  def fixNested(list: List[Element]): List[Element] ={
+    val sliding = list.sliding(3)
+    val found = sliding.find{
+      case List(el1:Element,Op(o), Expr(exList)) if exList.collect{case o: Op => o}.forall(x => x.c == o) => true
+      case List(Expr(exList),Op(o), el1:Element) if exList.collect{case o: Op => o}.forall(x => x.c == o) => true
+      case _ => false
+    }
+    def replaceNested(el:Element, o:Op, expr:Expr, l:List[Element])={
+      val index = sliding.indexOf(l);
+      val newSeq = el::o::expr.elements
+      list.patch(index, newSeq, 3)
+    }
+    found match{
+      case None => return list 
+      case Some(l@List(el1:Element,o:Op, expr:Expr)) => replaceNested(el1, o, expr, l)
+      case Some(l@List(expr:Expr,o:Op, el1:Element)) => replaceNested(el1, o, expr, l)
+    }
     
   }
   
@@ -353,7 +371,6 @@ object TreeBuilder extends App {
     }
     buildLinks(converted)
     buf ++= "}"
-    println(buf.toString)
 
     val q = new FileOutputStream(new File("/tmp/example.dot"))
     q.write(buf.toString.map(_.toByte).toArray)
@@ -397,9 +414,10 @@ object TreeBuilder extends App {
 
   val optomizations = applyHighOptimisators(
     collectSimilar,
+    fixNested,
     operateConstants) _
 
-  val s = "a*(b+c*(d+e))-d/(e+f)"
+  val s = "(a+b)*(c+d)"
 //    val s = "a+b*c*(b+c*d)+x"
   //  val s = "a+b-c-t-j+e"
   //  val s = "abc+5/3-r"
@@ -410,6 +428,8 @@ object TreeBuilder extends App {
   println(simpleTree)
 
   val optimized = applyLoop(optomizations)(simpleTree)
+  
+  println(fixNested(List(Var("a"), Op('+'), Expr(List(Var("b"), Op('+'), Const(5))))))
   
   println("braces ************");
   collectLoop(optimized)(createAllVariantsOfBraces)
