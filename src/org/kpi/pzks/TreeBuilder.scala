@@ -235,6 +235,27 @@ object TreeBuilder extends App {
 
   def colapseMinuses(list: List[Element]): List[Element] =
     colapseSecondOp(Op('-'), Op('+'))(list)
+    
+  def replaceConstants(list: List[Element]): List[Element] ={
+    val operations = list.collect({case o:Op => o}).distinct
+    val sameOp = operations.size == 1
+    if(!sameOp){
+      return list
+    }
+    val operands = list.filter({
+      case o:Op => false;
+      case _ => true
+    })
+    
+    val sorted = operands.sortWith((x,y) => (x,y)match{
+      case (c:Const, _) => true
+      case _ => false
+    })
+    
+    val head = sorted.head
+    val tail = sorted.tail
+    head :: tail.flatMap(x=> List(operations(0), x))
+  }
 
   def colapseUnariExp(list: List[Element]): List[Element] = {
     val t = list.map {
@@ -405,7 +426,9 @@ object TreeBuilder extends App {
     collectSimilar,
     colapseMinuses,
     colapseDivides,
-    collectSimilar)_)
+    collectSimilar,
+    replaceConstants
+    )_)
 
   def applyHighOptimisators(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
     fs.foldLeft(list)((el, f) => { val q = highOptimisation(f)(el); q })
@@ -416,7 +439,7 @@ object TreeBuilder extends App {
     fixNested,
     operateConstants) _
 
-  val s = "a+5*(3-d)"
+  val s = "a+5*(3+d)*(c+d*(df+sdf))"
   //    val s = "a+b*c*(b+c*d)+x"
   //  val s = "a+b-c-t-j+e"
   //  val s = "abc+5/3-r"
@@ -427,8 +450,6 @@ object TreeBuilder extends App {
   println(simpleTree)
 
   val optimized = applyLoop(optomizations)(simpleTree)
-
-  println(fixNested(List(Var("a"), Op('+'), Expr(List(Var("b"), Op('+'), Const(5))))))
 
   println("braces ************");
   collectLoop(optimized)(createAllVariantsOfBraces).foreach(println)
