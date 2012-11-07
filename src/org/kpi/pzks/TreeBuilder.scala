@@ -24,9 +24,14 @@ class Element;
 
 case class Op(c: Char) extends Element{
   def group = TreeBuilder.getGroup(this)
+  override def toString = c.toString
 }
-case class Const(v: Double) extends Element;
-case class Var(v: String) extends Element;
+case class Const(v: Double) extends Element{
+  override def toString = v.toString
+}
+case class Var(v: String) extends Element{
+  override def toString = v.toString
+}
 case class Ob extends Element
 case class Cb extends Element
 case class Expr(elements: List[Element]) extends Element {
@@ -35,7 +40,7 @@ case class Expr(elements: List[Element]) extends Element {
     case _ => false
   }
 
-  override def toString = "Expr(%s)".format(elements.mkString(", "))
+  override def toString = "(%s)".format(elements.mkString(", "))
 }
 
 object TreeBuilder extends App {

@@ -10,16 +10,16 @@ object BraceOpener {
       val oneSet = element match {
         case Expr(list) => {
           val variants = createAllVariantsOfBraces(list)
-          variants.map(variant => {
-            list.updated(i, Expr(variant))
-          })
+          val qq = variants.map(x => elements.updated(i, Expr(x)))
+          qq
         }
         case x:Element => Set[List[Element]]()
       }
       oneSet
     }).toSet
     
-    (mainSet + elements).flatMap(createDifVariants).toSet + elements
+    val result = (mainSet + elements).flatMap(createDifVariants).toSet + elements
+    result
   }
   
   def createDifVariants(list:List[Element])={
@@ -34,10 +34,11 @@ object BraceOpener {
       }
     })
     
-    found.collect{
+    val f = found.collect{
       case (Seq(e: Element, o: Op, expr: Expr), i) if (o.group == 1) => list.patch(i, unbrace(e,o,expr), 3)
       case (Seq(expr: Expr, o: Op, e: Element), i) if (o.group == 1) => list.patch(i, unbrace(e,o,expr), 3)
-    }.toSet+list
+    }.toSet
+    f+list
   }
 
   def unbrace(e: Element, o: Op, expr: Expr)= {
