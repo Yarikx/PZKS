@@ -256,6 +256,24 @@ object TreeBuilder extends App {
     val tail = sorted.tail
     head :: tail.flatMap(x=> List(operations(0), x))
   }
+  
+  def sort(list: List[Element]): List[Element] ={
+    val operations = list.collect({case o:Op => o}).distinct
+    val sameOp = operations.size == 1
+    if(!sameOp || list.size < 4){
+      return list
+    }
+    val operands = list.filter({
+      case o:Op => false;
+      case _ => true
+    })
+    
+    val sorted = operands.sortBy(_.hashCode())
+    
+    val head = sorted.head
+    val tail = sorted.tail
+    head :: tail.flatMap(x=> List(operations(0), x))
+  }
 
   def colapseUnariExp(list: List[Element]): List[Element] = {
     val t = list.map {
@@ -371,12 +389,15 @@ object TreeBuilder extends App {
         val o = ex.elements(1).asInstanceOf[Op].c
         Oper(o, ql, qr)
     }
-
-    val checked = e match {
-      case Expr(List(Expr(List(el: Element)))) => el
-      case Expr(List(el: Element)) => el
-      case x => x
+    
+    def up(exp:Expr):Element={
+      exp match{
+        case Expr(List(ex: Expr)) => up(ex)
+        case elem:Element => elem
+      }
     }
+
+    val checked = up(e)
 
     val converted = convert(checked)
     def buildLinks(ex: El) {
@@ -427,6 +448,7 @@ object TreeBuilder extends App {
     colapseMinuses,
     colapseDivides,
     collectSimilar,
+    sort,
     replaceConstants
     )_)
 
@@ -439,7 +461,7 @@ object TreeBuilder extends App {
     fixNested,
     operateConstants) _
 
-  val s = "a+5*(3+d)*(c+d*(df+sdf))"
+  val s = "a+(3+d)*(f+5*(b+c))"
   //    val s = "a+b*c*(b+c*d)+x"
   //  val s = "a+b-c-t-j+e"
   //  val s = "abc+5/3-r"
@@ -452,7 +474,7 @@ object TreeBuilder extends App {
   val optimized = applyLoop(optomizations)(simpleTree)
 
   println("braces ************");
-  collectLoop(optimized)(createAllVariantsOfBraces).foreach(println)
+  collectLoop(optimized)(createAllVariantsOfBraces).foreach(l => println(l.mkString))
   println("braces ************");
 
   val paired = applyToAll(pair)(optimized)
