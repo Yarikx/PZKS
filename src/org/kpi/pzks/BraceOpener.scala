@@ -19,7 +19,7 @@ object BraceOpener {
       oneSet
     }).toSet
     
-    val result = (mainSet + elements).flatMap(createDifVariants).toSet + elements
+    val result = ((mainSet + elements).flatMap(createDifVariants).toSet + elements).map(x => applyLoop(applyAll(fixNested))(x))
     result
   }
   
@@ -52,9 +52,10 @@ object BraceOpener {
   
   def collectLoop(elements: List[Element])(f: List[Element] => Set[List[Element]])={
     def recur(lists: Set[List[Element]]):Set[List[Element]]={
-      val res = lists.flatMap(x => f(x).map(applyLoop(optomizations)(_))).toSet
-//      res.foreach(println)
-//      println("*****************************")
+//      val res = lists.flatMap(x => f(x).map(applyLoop(optomizations)(_))).toSet
+      val res = lists.flatMap(x => f(x)).toSet
+      res.foreach(println)
+      println("*****************************")
       if(res == lists){
         res
       }else{

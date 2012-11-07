@@ -40,7 +40,7 @@ case class Expr(elements: List[Element]) extends Element {
     case _ => false
   }
 
-  override def toString = "(%s)".format(elements.mkString(", "))
+  override def toString = "(%s)".format(elements.mkString(""))
 }
 
 object TreeBuilder extends App {
@@ -282,7 +282,7 @@ object TreeBuilder extends App {
         (el1, o, e, l)
     }
     def replaceNested(el: Element, o: Op, expr: Expr, l: List[Element]) = {
-      val index = sliding.indexOf(l);
+      val index = list.indexOfSlice(l);
       val newSeq = el :: o :: expr.elements
       list.patch(index, newSeq, 3)
     }
@@ -416,7 +416,7 @@ object TreeBuilder extends App {
     fixNested,
     operateConstants) _
 
-  val s = "(a+b)*(c+d)"
+  val s = "a+(b*(c+(d*(e+f))))"
   //    val s = "a+b*c*(b+c*d)+x"
   //  val s = "a+b-c-t-j+e"
   //  val s = "abc+5/3-r"
