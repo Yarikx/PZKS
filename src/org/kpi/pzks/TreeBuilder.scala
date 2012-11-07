@@ -22,14 +22,14 @@ import org.kpi.pzks.Parser.parseString
 
 class Element;
 
-case class Op(c: Char) extends Element{
+case class Op(c: Char) extends Element {
   def group = TreeBuilder.getGroup(this)
   override def toString = c.toString
 }
-case class Const(v: Double) extends Element{
+case class Const(v: Double) extends Element {
   override def toString = v.toString
 }
-case class Var(v: String) extends Element{
+case class Var(v: String) extends Element {
   override def toString = v.toString
 }
 case class Ob extends Element
@@ -137,10 +137,10 @@ object TreeBuilder extends App {
   }
 
   def groupBy[A](f: (A, A) => Boolean)(elements: List[A]) = {
-    
+
     @tailrec
     def recur(result: List[List[A]], list: List[A]): List[List[A]] = {
-      if(list.isEmpty){
+      if (list.isEmpty) {
         return result.reverse
       }
       val head = list.head
@@ -176,7 +176,7 @@ object TreeBuilder extends App {
 
   def collectSimilar(l: List[Element]): List[Element] = {
     val operations = getOperationWithIndices(l);
-    if(operations.isEmpty){
+    if (operations.isEmpty) {
       return l
     }
     val opGroups = groupBy((x: (Op, Int), y: (Op, Int)) => getGroup(x._1) == getGroup(y._1))(operations)
@@ -221,7 +221,7 @@ object TreeBuilder extends App {
 
     val before = list.take(first)
     val fullSlice = list.slice(first, last + 1).map {
-      case oper@Op(q) if(oper == op) => oposite
+      case oper @ Op(q) if (oper == op) => oposite
       case x => x
     }
     val middle = Expr(fullSlice)
@@ -245,54 +245,57 @@ object TreeBuilder extends App {
     }
     t.flatten
   }
-  
-  def operate(c:Char, c1:Double, c2:Double)={
-    c match{
-      case '+' => c1+c2
-      case '-' => c1-c2
-      case '/' => c1/c2
-      case '*' => c1*c2
+
+  def operate(c: Char, c1: Double, c2: Double) = {
+    c match {
+      case '+' => c1 + c2
+      case '-' => c1 - c2
+      case '/' => c1 / c2
+      case '*' => c1 * c2
     }
   }
-  
+
   //High level
-  def operateConstants(list: List[Element]): List[Element] ={
+  def operateConstants(list: List[Element]): List[Element] = {
     val found = list.sliding(3).find({
       case List(Const(c1), Op(o), Const(c2)) => true
       case _ => false
     })
-    
-    found match{
+
+    found match {
       case None => return list;
-      case Some(slice@List(Const(c1), Op(o), Const(c2))) =>
-        val res = operate(o, c1,c2)
-        
+      case Some(slice @ List(Const(c1), Op(o), Const(c2))) =>
+        val res = operate(o, c1, c2)
+
         val start = list.indexOfSlice(slice)
-        
-        list.take(start) ::: Const(res) :: list.drop(start+3)
+
+        list.take(start) ::: Const(res) :: list.drop(start + 3)
     }
   }
-  
-  def fixNested(list: List[Element]): List[Element] ={
+
+  def fixNested(list: List[Element]): List[Element] = {
     val sliding = list.sliding(3)
-    val found = sliding.find{
-      case List(el1:Element,Op(o), Expr(exList)) if exList.collect{case o: Op => o}.forall(x => x.c == o) => true
-      case List(Expr(exList),Op(o), el1:Element) if exList.collect{case o: Op => o}.forall(x => x.c == o) => true
-      case _ => false
+    val found = sliding.collect {
+      case l@List(el1: Element, o: Op, e@Expr(exList)) if exList.collect { case o: Op => o }.forall(x => x == o) =>
+        (el1, o, e, l)
+      case l@List(e@Expr(exList), o: Op, el1: Element) if exList.collect { case o: Op => o }.forall(x => x == o) =>
+        (el1, o, e, l)
     }
-    def replaceNested(el:Element, o:Op, expr:Expr, l:List[Element])={
+    def replaceNested(el: Element, o: Op, expr: Expr, l: List[Element]) = {
       val index = sliding.indexOf(l);
-      val newSeq = el::o::expr.elements
+      val newSeq = el :: o :: expr.elements
       list.patch(index, newSeq, 3)
     }
-    found match{
-      case None => return list 
-      case Some(l@List(el1:Element,o:Op, expr:Expr)) => replaceNested(el1, o, expr, l)
-      case Some(l@List(expr:Expr,o:Op, el1:Element)) => replaceNested(el1, o, expr, l)
+    if (!found.isEmpty) {
+      found.next match{
+        case (el1: Element, o: Op, expr: Expr, l) => replaceNested(el1, o, expr, l)
+      }
+    } else {
+      return list
     }
-    
+
   }
-  
+
   //other
 
   def pair(list: List[Element]): List[Element] = {
@@ -348,12 +351,12 @@ object TreeBuilder extends App {
         Oper(o, ql, qr)
     }
 
-    val checked = e match{
-      case Expr(List(Expr(List(el:Element)))) => el
-      case Expr(List(el:Element)) => el
+    val checked = e match {
+      case Expr(List(Expr(List(el: Element)))) => el
+      case Expr(List(el: Element)) => el
       case x => x
     }
-    
+
     val converted = convert(checked)
     def buildLinks(ex: El) {
 
@@ -387,38 +390,34 @@ object TreeBuilder extends App {
   def applyAll(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
     fs.foldLeft(list)((el, f) => { val q = applyToAll(f)(el); q })
   }
-  
-  val safeOptimization = ((f: List[Element] =>(List[Element])) =>  applyAll(
-      f,
-      colapseUnariExp,
-      collectSimilar
-    )_
-  )
-  
+
+  val safeOptimization = ((f: List[Element] => (List[Element])) => applyAll(
+    f,
+    colapseUnariExp,
+    collectSimilar)_)
+
   def applyOptimisators(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
     fs.foldLeft(list)((el, f) => { val q = safeOptimization(f)(el); q })
   }
-  
-  val highOptimisation = ((f: List[Element] =>(List[Element])) =>  applyOptimisators(
-      f,
-      collectSimilar,
-      colapseMinuses,
-      colapseDivides,
-      collectSimilar
-    )_
-  )
-  
+
+  val highOptimisation = ((f: List[Element] => (List[Element])) => applyOptimisators(
+    f,
+    collectSimilar,
+    colapseMinuses,
+    colapseDivides,
+    fixNested,
+    collectSimilar)_)
+
   def applyHighOptimisators(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
     fs.foldLeft(list)((el, f) => { val q = highOptimisation(f)(el); q })
   }
 
   val optomizations = applyHighOptimisators(
     collectSimilar,
-    fixNested,
     operateConstants) _
 
   val s = "(a+b)*(c+d)"
-//    val s = "a+b*c*(b+c*d)+x"
+  //    val s = "a+b*c*(b+c*d)+x"
   //  val s = "a+b-c-t-j+e"
   //  val s = "abc+5/3-r"
   val parsed = parseString(s)
@@ -428,13 +427,16 @@ object TreeBuilder extends App {
   println(simpleTree)
 
   val optimized = applyLoop(optomizations)(simpleTree)
-  
+
   println(fixNested(List(Var("a"), Op('+'), Expr(List(Var("b"), Op('+'), Const(5))))))
-  
+
   println("braces ************");
-  collectLoop(optimized)(createAllVariantsOfBraces)
-//  createAllVariantsOfBraces(optimized).foreach(println)
+  val ss = collectLoop(optimized)(createAllVariantsOfBraces)
+
+  //  createAllVariantsOfBraces(optimized).foreach(println)
   println("braces ************");
+  ss.map(fixNested(_)).foreach(println)
+  println("end ************");
 
   val paired = applyToAll(pair)(optimized)
 
