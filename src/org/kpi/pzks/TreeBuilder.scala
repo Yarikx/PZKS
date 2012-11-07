@@ -405,7 +405,6 @@ object TreeBuilder extends App {
     collectSimilar,
     colapseMinuses,
     colapseDivides,
-    fixNested,
     collectSimilar)_)
 
   def applyHighOptimisators(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
@@ -414,6 +413,7 @@ object TreeBuilder extends App {
 
   val optomizations = applyHighOptimisators(
     collectSimilar,
+    fixNested,
     operateConstants) _
 
   val s = "(a+b)*(c+d)"
@@ -431,12 +431,8 @@ object TreeBuilder extends App {
   println(fixNested(List(Var("a"), Op('+'), Expr(List(Var("b"), Op('+'), Const(5))))))
 
   println("braces ************");
-  val ss = collectLoop(optimized)(createAllVariantsOfBraces)
-
-  //  createAllVariantsOfBraces(optimized).foreach(println)
+  collectLoop(optimized)(createAllVariantsOfBraces).foreach(println)
   println("braces ************");
-  ss.map(fixNested(_)).foreach(println)
-  println("end ************");
 
   val paired = applyToAll(pair)(optimized)
 
