@@ -42,7 +42,6 @@ object Parser {
       case x if symbols contains x => new Fail("symbol after digits no allowed")
       case x if operations contains x => new Operation
       case '.' => new Dot
-      case '(' => new OpenBrace
       case ')' => new CloseBrace
       case '\n' => new End
       case _ => new Fail("wrong symbol after digit")
@@ -55,7 +54,6 @@ object Parser {
       case x if symbols contains x => new Fail("symbol after digits no allowed")
       case x if operations contains x => new Operation
       case '.' => new Fail("too much dots in digits")
-      case '(' => new OpenBrace
       case ')' => new CloseBrace
       case '\n' => new End
       case _ => new Fail("wrong symbol after digit")

@@ -1,6 +1,7 @@
 package org.kpi.pzks
 
 import java.io.File
+import scala.io.Source
 import java.io.FileOutputStream
 import java.lang.Double
 
@@ -9,7 +10,7 @@ import scala.collection.mutable.Map
 import scala.collection.mutable.StringBuilder
 import scala.util.Random
 
-import org.kpi.pzks.BraceOpener._;
+import org.kpi.pzks.BraceOpener._
 import org.kpi.pzks.Parser.CloseBrace
 import org.kpi.pzks.Parser.Digits
 import org.kpi.pzks.Parser.Dot
@@ -435,7 +436,7 @@ object TreeBuilder extends App {
 
   val safeOptimization = ((f: List[Element] => (List[Element])) => applyAll(
     f,
-    colapseUnariExp,
+    applyLoop(colapseUnariExp),
     collectSimilar)_)
 
   def applyOptimisators(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
@@ -460,8 +461,13 @@ object TreeBuilder extends App {
     collectSimilar,
     fixNested,
     operateConstants) _
+    
+  def getString = {
+    Source.fromFile("/tmp/input").getLines().next.trim
+  }
 
-  val s = "a+(3+d)*(f+5*(b+c))"
+  val s = getString
+//  val s = "a+(3+d)*(f+5*(b+c))"
   //    val s = "a+b*c*(b+c*d)+x"
   //  val s = "a+b-c-t-j+e"
   //  val s = "abc+5/3-r"

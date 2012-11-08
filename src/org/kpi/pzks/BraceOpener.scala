@@ -39,7 +39,7 @@ object BraceOpener {
       case (Seq(e: Element, o: Op, expr: Expr), i) if (o.group == 1) => list.patch(i, unbrace(e,o,expr), 3)
       case (Seq(expr: Expr, o: Op, e: Element), i) if (o.group == 1) => list.patch(i, unbrace(e,o,expr), 3)
     }.toSet
-    f+list
+    (f+list).map(colapseUnariExp)
   }
 
   def unbrace(e: Element, o: Op, expr: Expr)= {
@@ -47,7 +47,7 @@ object BraceOpener {
       case op: Op => op
       case el: Element => Expr(List(e, o, el))
     })
-    opened
+    List(Expr(opened))
   }
   
   def collectLoop(elements: List[Element])(f: List[Element] => Set[List[Element]])={
