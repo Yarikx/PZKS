@@ -314,18 +314,50 @@ object TreeBuilder extends App {
   }
 
   def fixNested(list: List[Element]): List[Element] = {
-    val sliding = list.sliding(3)
-    val found = sliding.collect {
-      case l@List(el1: Element, o: Op, e@Expr(exList)) if exList.collect { case o: Op => o }.forall(x => x == o) =>
-        (el1, o, e, l)
-      case l@List(e@Expr(exList), o: Op, el1: Element) if exList.collect { case o: Op => o }.forall(x => x == o) =>
-        (el1, o, e, l)
-    }
     def replaceNested(el: Element, o: Op, expr: Expr, l: List[Element]) = {
       val index = list.indexOfSlice(l);
-      val newSeq = el :: o :: expr.elements
+      val exprElements = o match{
+        case Op('-') => expr.elements.map({
+          case Op('-') => Op('+')
+          case Op('+') => Op('-')
+          case Op(op) => throw new IllegalStateException("operation '%c' is from wrong group" format op)
+          case x => x
+        })
+        case x => expr.elements
+      }
+      val newSeq = colapseDivides(el :: o :: exprElements)
       list.patch(index, newSeq, 3)
     }
+    def testFirst={
+      val trinity = list.take(3);
+      trinity match{
+        case l@List(e@Expr(exList), o: Op, el1: Element) if exList.collect { case o: Op => o }.forall(x => (x.c == '+' || x.c == '*' || x.c == '-') && x.group == o.group) =>
+          list.patch(0, exList, 1)
+        case x => list
+      }
+    }
+    
+    val tested = testFirst
+    val start = if(tested==list)
+      list 
+    else 
+      optimizations(tested)
+//    val tested = applyAll(collectSimilar, colapseDivides, colapseMinuses, collectSimilar)(testFirst)
+//    if(tested)
+    val sliding = start.sliding(3)
+    val found = sliding.collect {
+      case l@List(el1: Element, o: Op, e@Expr(exList)) if exList.collect { case o: Op => o }.forall(x => (x.c == '+' || x.c == '*') && x.group == o.group) =>
+        (el1, o, e, l)
+      case l@List(el1: Element, o: Op, e@Expr(exList)) if exList.collect { case o: Op => o }.forall(x => (x.c == '+' || x.c == '*'|| x.c == '-') && x.group == o.group) =>
+        (el1, o, e, l)
+      case l@List(e@Expr(exList), o: Op, el1: Element) if exList.collect { case o: Op => o }.forall(x => (x.c == '+' || x.c == '*' ) && x.group == o.group) =>
+        if(o.group == 1){
+          (el1, Op('*'), e, l)
+        }else{
+          (el1,Op('+'),e , l)
+        }
+    }
+    
     if (!found.isEmpty) {
       found.next match{
         case (el1: Element, o: Op, expr: Expr, l) => replaceNested(el1, o, expr, l)
@@ -384,11 +416,10 @@ object TreeBuilder extends App {
     def convert(e: Element): El = e match {
       case Var(s) => Val(s)
       case Const(x) => Val(x.toString)
-      case ex: Expr =>
-        val ql = convert(ex.elements(0))
-        val qr = convert(ex.elements(2))
-        val o = ex.elements(1).asInstanceOf[Op].c
-        Oper(o, ql, qr)
+      case Expr(List(ql:Element, Op(o), qr:Element)) =>
+        Oper(o, convert(ql), convert(qr))
+      case Expr(List(e:Element)) => convert(e)
+      case x => throw new IllegalStateException("Wrong expression format for building binary tree")
     }
     
     def up(exp:Expr):Element={
@@ -457,9 +488,10 @@ object TreeBuilder extends App {
     fs.foldLeft(list)((el, f) => { val q = highOptimisation(f)(el); q })
   }
 
-  val optomizations = applyHighOptimisators(
+  val optimizations = applyHighOptimisators(
     collectSimilar,
     fixNested,
+    collectSimilar,
     operateConstants) _
     
   def getString = {
@@ -477,7 +509,7 @@ object TreeBuilder extends App {
   println("simple tree")
   println(simpleTree)
 
-  val optimized = applyLoop(optomizations)(simpleTree)
+  val optimized = applyLoop(optimizations)(simpleTree)
 
   println("braces ************");
   collectLoop(optimized)(createAllVariantsOfBraces).foreach(l => println(l.mkString))

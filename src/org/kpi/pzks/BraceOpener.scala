@@ -36,7 +36,7 @@ object BraceOpener {
     })
     
     val f = found.collect{
-      case (Seq(e: Element, o: Op, expr: Expr), i) if (o.group == 1) => list.patch(i, unbrace(e,o,expr), 3)
+      case (Seq(e: Element, o: Op, expr: Expr), i) if (o.c == '*') => list.patch(i, unbrace(e,o,expr), 3)
       case (Seq(expr: Expr, o: Op, e: Element), i) if (o.group == 1) => list.patch(i, unbrace(e,o,expr), 3)
     }.toSet
     (f+list).map(colapseUnariExp)
@@ -52,7 +52,7 @@ object BraceOpener {
   
   def collectLoop(elements: List[Element])(f: List[Element] => Set[List[Element]])={
     def recur(lists: Set[List[Element]]):Set[List[Element]]={
-      val res = lists.flatMap(x => f(x).map(applyLoop(optomizations)(_))).toSet
+      val res = lists.flatMap(x => f(x).map(applyLoop(optimizations)(_))).toSet
 //      val res = lists.flatMap(x => f(x)).toSet
       res.foreach(println)
       println("*****************************")
