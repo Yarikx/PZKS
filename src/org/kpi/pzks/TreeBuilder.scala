@@ -23,15 +23,24 @@ import org.kpi.pzks.Parser.parseString
 
 class Element;
 
+trait Negativable extends Element{
+  def neg:Element
+  def isNegative:Boolean
+}
 case class Op(c: Char) extends Element {
   def group = TreeBuilder.getGroup(this)
   override def toString = c.toString
 }
-case class Const(v: Double) extends Element {
+case class Const(v: Double) extends Element with Negativable{
   override def toString = v.toString
+  def neg=Const(-v)
+  def isNegative = v<0
 }
-case class Var(v: String) extends Element {
-  override def toString = v.toString
+case class Var(v: String) extends Element with Negativable{
+  val negative = false
+  override def toString = (if(negative)"-"else"")+v.toString
+  def neg=new Var(v){override val negative=true}
+  def isNegative = negative
 }
 case class Ob extends Element
 case class Cb extends Element
@@ -112,9 +121,10 @@ object TreeBuilder extends App {
       recur(tail, 1)
 
     }
+    //Fix negative on numbers
     def fixNegative(l:List[Element])=l match{
-      case Op('-')::Const(c)::tail => 
-        Const(-c)::tail
+      case (n:Negativable)::Const(c)::tail => 
+        n.neg::tail
       case x => x
     }
 
@@ -243,6 +253,30 @@ object TreeBuilder extends App {
   def colapseMinuses(list: List[Element]): List[Element] =
     colapseSecondOp(Op('-'), Op('+'))(list)
     
+  def openUnariOpBeforeBraces(l: List[Element]): List[Element] = {
+    l match {
+      case Op('-')::Expr(list)::tail => 
+        assert(list.collect{
+        		case o:Op => o
+        	  }.forall(x => x.group ==2)
+         , "can not open negative expr [%s]" format list)
+         
+        val head::rest = list
+        val newHead = head match{
+          case n: Negativable => n.neg
+          case x => throw new IllegalStateException("first element [%s] of expr [%s] is not negativable" format (head, list));
+        }
+        val processedList = rest.map{
+          case Op('+') => Op('-')
+          case Op('-') => Op('+')
+          case x => x
+        }
+        newHead::processedList:::tail
+      case Op('-')::(n:Negativable)::rest => openUnariOpBeforeBraces(n.neg::rest)
+      case x => x
+    }
+  }
+    
   def replaceConstants(list: List[Element]): List[Element] ={
     val operations = list.collect({case o:Op => o}).distinct
     val sameOp = operations.size == 1
@@ -284,6 +318,7 @@ object TreeBuilder extends App {
 
   def colapseUnariExp(list: List[Element]): List[Element] = {
     val t = list.map {
+      //TODO delete or make recursive call to first line
       case Expr(List(e: Expr)) => List(e)
       case Expr(List(e: Element)) => List(e)
       case Expr(List(o: Op, e: Expr)) => List(o, e)
@@ -420,7 +455,7 @@ object TreeBuilder extends App {
     case class Val(s: String) extends El(rnd.nextInt(1000000))
 
     def convert(e: Element): El = e match {
-      case Var(s) => Val(s)
+      case v:Var => Val(v.toString)
       case Const(x) => Val(x.toString)
       case Expr(List(ql:Element, Op(o), qr:Element)) =>
         Oper(o, convert(ql), convert(qr))
@@ -468,7 +503,7 @@ object TreeBuilder extends App {
   }
 
   def applyAll(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
-    fs.foldLeft(list)((el, f) => { val q = applyToAll(f)(el); q })
+    fs.foldLeft(list)((el, f) => { val q = applyToAll(f)(el); println("res =[%s]" format(q));q })
   }
 
   val safeOptimization = ((f: List[Element] => (List[Element])) => applyAll(
@@ -477,7 +512,7 @@ object TreeBuilder extends App {
     collectSimilar)_)
 
   def applyOptimisators(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
-    fs.foldLeft(list)((el, f) => { val q = safeOptimization(f)(el); q })
+    fs.foldLeft(list)((el, f) => safeOptimization(f)(el))
   }
 
   val highOptimisation = ((f: List[Element] => (List[Element])) => applyOptimisators(
@@ -485,9 +520,7 @@ object TreeBuilder extends App {
     collectSimilar,
     colapseMinuses,
     colapseDivides,
-    collectSimilar,
-    sort,
-    replaceConstants
+    collectSimilar
     )_)
 
   def applyHighOptimisators(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
@@ -495,10 +528,13 @@ object TreeBuilder extends App {
   }
 
   val optimizations = applyHighOptimisators(
+    openUnariOpBeforeBraces,
     collectSimilar,
     fixNested,
     collectSimilar,
-    operateConstants) _
+    operateConstants,
+    sort,
+    replaceConstants) _
     
   def getString = {
     Source.fromFile("/tmp/input").getLines().next.trim
@@ -518,7 +554,7 @@ object TreeBuilder extends App {
   val optimized = applyLoop(optimizations)(simpleTree)
 
   println("braces ************");
-  collectLoop(optimized)(createAllVariantsOfBraces).foreach(l => println(l.mkString))
+//  collectLoop(optimized)(createAllVariantsOfBraces).foreach(l => println(l.mkString))
   println("braces ************");
 
   val paired = applyToAll(pair)(optimized)
@@ -526,6 +562,9 @@ object TreeBuilder extends App {
   println(s)
   println("pair")
   println(paired)
+  val asd = Var("asd")
+  println(asd)
+  println(asd.neg)
   buildGraphWizFile(Expr(paired))
 
 }
