@@ -112,6 +112,11 @@ object TreeBuilder extends App {
       recur(tail, 1)
 
     }
+    def fixNegative(l:List[Element])=l match{
+      case Op('-')::Const(c)::tail => 
+        Const(-c)::tail
+      case x => x
+    }
 
     val braces = src.zip(0 until src.size).filter(x => x.isInstanceOf[OpenBrace] || x.isInstanceOf[CloseBrace])
 
@@ -122,9 +127,10 @@ object TreeBuilder extends App {
 
     val afterBraces = getElementsAfterBraces(startOfBraces.tail)
 
-    val treeInBraces = Expr(buildSimpleTree(startOfBraces.tail.take(startOfBraces.size - 2 - afterBraces.size)))
+    val treeInBraces = buildSimpleTree(startOfBraces.tail.take(startOfBraces.size - 2 - afterBraces.size))
+    val processedExprTree = Expr(fixNegative(treeInBraces))
 
-    beforeBraces ::: treeInBraces :: buildSimpleTree(afterBraces)
+    fixNegative(beforeBraces) ::: processedExprTree :: buildSimpleTree(afterBraces)
 
   }
 
@@ -485,7 +491,7 @@ object TreeBuilder extends App {
     )_)
 
   def applyHighOptimisators(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
-    fs.foldLeft(list)((el, f) => { val q = highOptimisation(f)(el); q })
+    fs.foldLeft(list)((el, f) => highOptimisation(f)(el))
   }
 
   val optimizations = applyHighOptimisators(
