@@ -530,7 +530,7 @@ object TreeBuilder extends App {
   }
 
   def applyAll(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
-    fs.foldLeft(list)((el, f) => { val q = applyToAll(f)(el); println("res =[%s]" format(q));q })
+    fs.foldLeft(list)((el, f) => applyToAll(f)(el))
   }
 
   val safeOptimization = ((f: List[Element] => (List[Element])) => applyAll(
@@ -591,9 +591,6 @@ object TreeBuilder extends App {
   println(s)
   println("pair")
   println(paired)
-  val asd = Var("asd")
-  println(asd)
-  println(asd.neg)
   buildGraphWizFile(Expr(paired))
 
 }
