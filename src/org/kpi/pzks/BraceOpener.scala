@@ -45,7 +45,7 @@ object BraceOpener {
   def unbrace(e: Element, o: Op, expr: Expr)= {
     val opened:List[Element] = expr.elements.map({
       case op: Op => op
-      case el: Element => Expr(List(e, o, el))
+      case el: Element => Expr(List(el, o, e))
     })
     List(Expr(opened))
   }

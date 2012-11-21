@@ -30,6 +30,12 @@ trait Negativable extends Element{
 case class Op(c: Char) extends Element {
   def group = TreeBuilder.getGroup(this)
   override def toString = c.toString
+  def oposite= Op(c match {
+    case '+' => '-'
+    case '-' => '+'
+    case '*' => '/'
+    case '/' => '*'
+  })
 }
 case class Const(v: Double) extends Element with Negativable{
   override def toString = v.toString
@@ -39,7 +45,11 @@ case class Const(v: Double) extends Element with Negativable{
 case class Var(v: String) extends Element with Negativable{
   val negative = false
   override def toString = (if(negative)"-"else"")+v.toString
-  def neg=new Var(v){override val negative=true}
+  def neg=
+    if(negative)
+      new Var(v){override val negative=false}
+    else new Var(v){override val negative=true}
+  
   def isNegative = negative
 }
 case class Ob extends Element
@@ -127,7 +137,7 @@ object TreeBuilder extends App {
         n.neg::tail
       case x => x
     }
-
+    
     val braces = src.zip(0 until src.size).filter(x => x.isInstanceOf[OpenBrace] || x.isInstanceOf[CloseBrace])
 
     val (beforeBraces, startOfBraces) = src.span(_ != Ob())
@@ -276,6 +286,23 @@ object TreeBuilder extends App {
       case x => x
     }
   }
+  
+  //Fix negative vars and consts after ops
+    def fixNegVals(l:List[Element])={
+      val slices  = l sliding 2
+      val toReplace = slices collect {
+        case orig@List(o:Op, n:Negativable) if (o.group == 2 && n.isNegative)=> (orig, o.oposite::n.neg::Nil)
+      } toList;
+      if(toReplace.isEmpty){
+        l
+      }else{
+        toReplace.foldLeft(l)((x,y) => {
+          val(orig, res) = y
+          val index = x.indexOfSlice(orig)
+          x.patch(index, res, 2)
+        })
+      }
+    }
     
   def replaceConstants(list: List[Element]): List[Element] ={
     val operations = list.collect({case o:Op => o}).distinct
@@ -301,7 +328,7 @@ object TreeBuilder extends App {
   def sort(list: List[Element]): List[Element] ={
     val operations = list.collect({case o:Op => o}).distinct
     val sameOp = operations.size == 1
-    if(!sameOp || list.size < 4){
+    if(!sameOp || list.size < 4 || operations.contains(Op('/'))){
       return list
     }
     val operands = list.filter({
@@ -520,7 +547,8 @@ object TreeBuilder extends App {
     collectSimilar,
     colapseMinuses,
     colapseDivides,
-    collectSimilar
+    collectSimilar,
+    fixNegVals
     )_)
 
   def applyHighOptimisators(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
@@ -534,7 +562,8 @@ object TreeBuilder extends App {
     collectSimilar,
     operateConstants,
     sort,
-    replaceConstants) _
+    replaceConstants
+    ) _
     
   def getString = {
     Source.fromFile("/tmp/input").getLines().next.trim
@@ -554,7 +583,7 @@ object TreeBuilder extends App {
   val optimized = applyLoop(optimizations)(simpleTree)
 
   println("braces ************");
-//  collectLoop(optimized)(createAllVariantsOfBraces).foreach(l => println(l.mkString))
+  collectLoop(optimized)(createAllVariantsOfBraces).foreach(l => println(l.mkString))
   println("braces ************");
 
   val paired = applyToAll(pair)(optimized)
