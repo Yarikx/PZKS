@@ -45,15 +45,14 @@ case class Const(v: Double) extends Element with Negativable{
 case class Var(v: String) extends Element with Negativable{
   val negative = false
   override def toString = (if(negative)"-"else"")+v.toString
-  def neg=
-    if(negative)
-      new Var(v){override val negative=false}
-    else new Var(v){override val negative=true}
-  
+  def neg={
+    val oposite = !negative 
+    new Var(v){override val negative = oposite}
+  }
   def isNegative = negative
 }
-case class Ob extends Element
-case class Cb extends Element
+case class Ob() extends Element
+case class Cb() extends Element
 case class Expr(elements: List[Element]) extends Element {
   def isPure = elements match {
     case List(_, Op(o), _) => true
@@ -73,7 +72,7 @@ object TreeBuilder extends App {
       case other => other
     })
 
-    val zipped = elements.tail.zip(s.toList)
+    val zipped = elements.tail.zip(str.toList)
 
     def buildRecur(nodes: List[(Node, Char)], res: List[Element]): (List[(Node, Char)], List[Element]) = {
 
@@ -382,8 +381,8 @@ object TreeBuilder extends App {
   }
 
   def fixNested(list: List[Element]): List[Element] = {
-    def replaceNested(el: Element, o: Op, expr: Expr, l: List[Element]) = {
-      val index = list.indexOfSlice(l);
+    def replaceNested(el: Element, o: Op, expr: Expr, l: List[Element], start:List[Element]) = {
+      val index = start.indexOfSlice(l);
       val exprElements = o match{
         case Op('-') => expr.elements.map({
           case Op('-') => Op('+')
@@ -394,7 +393,7 @@ object TreeBuilder extends App {
         case x => expr.elements
       }
       val newSeq = colapseDivides(el :: o :: exprElements)
-      list.patch(index, newSeq, 3)
+      start.patch(index, newSeq, l.size)
     }
     def testFirst={
       val trinity = list.take(3);
@@ -428,7 +427,7 @@ object TreeBuilder extends App {
     
     if (!found.isEmpty) {
       found.next match{
-        case (el1: Element, o: Op, expr: Expr, l) => replaceNested(el1, o, expr, l)
+        case (el1: Element, o: Op, expr: Expr, l) => replaceNested(el1, o, expr, l, start)
       }
     } else {
       return list
@@ -570,10 +569,6 @@ object TreeBuilder extends App {
   }
 
   val s = getString
-//  val s = "a+(3+d)*(f+5*(b+c))"
-  //    val s = "a+b*c*(b+c*d)+x"
-  //  val s = "a+b-c-t-j+e"
-  //  val s = "abc+5/3-r"
   val parsed = parseString(s)
   val elements = groupElements(parsed, s)
   val simpleTree = buildSimpleTree(elements)
@@ -581,16 +576,24 @@ object TreeBuilder extends App {
   println(simpleTree)
 
   val optimized = applyLoop(optimizations)(simpleTree)
-
+//
+//  
+//  val testS = "b*(1+a)-3-y"
+//    val test = List(Var("b"),Op('*'), Expr(List(Const(1), Op('+'), Var("a"))), Op('-'), Const(3), Op('-'), Var("y"))
+    
+//    println(createDifVariants(test).map(x => applyLoop(applyAll(fixNested))(x)))
+//  val test = b
+  
   println("braces ************");
   collectLoop(optimized)(createAllVariantsOfBraces).foreach(l => println(l.mkString))
   println("braces ************");
+  
+  
 
-  val paired = applyToAll(pair)(optimized)
+//  val paired = applyToAll(pair)(optimized)
 
-  println(s)
+//  println(s)
   println("pair")
-  println(paired)
-  buildGraphWizFile(Expr(paired))
-
+//  println(paired)
+//  buildGraphWizFile(Expr(paired))
 }
