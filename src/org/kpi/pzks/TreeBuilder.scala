@@ -585,7 +585,11 @@ object TreeBuilder extends App {
 //  val test = b
   
   println("braces ************");
-  collectLoop(optimized)(createAllVariantsOfBraces).foreach(l => println(l.mkString))
+//  collectLoop(optimized)(createAllVariantsOfBraces).foreach(l => println(l.mkString))
+  {
+    import BraceEncloser._;
+    println(searchForAll(optimized))
+  }
   println("braces ************");
   
   
