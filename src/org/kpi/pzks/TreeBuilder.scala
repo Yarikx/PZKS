@@ -37,7 +37,7 @@ case class Op(c: Char) extends Element {
     case '/' => '*'
   })
 }
-case class Const(v: Double) extends Element with Negativable{
+case class Const(v: scala.Double) extends Element with Negativable{
   override def toString = v.toString
   def neg=Const(-v)
   def isNegative = v<0

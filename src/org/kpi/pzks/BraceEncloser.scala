@@ -15,7 +15,9 @@ object BraceEncloser {
     el: Element,
     negative: Boolean = false)
 
-  case class Line(line: List[Item], pos: Op, neg: Op, negative: Boolean = false) extends Traversable[Item] {
+  case class Line(line: List[Item], pos: Op, negative: Boolean = false) extends Traversable[Item] {
+
+    val neg = pos.oposite
 
     def foreach[U](f: Item => U) = line.foreach(f)
     override def equals(that: Any) = {
@@ -25,7 +27,7 @@ object BraceEncloser {
       }
     }
 
-    override def toString = "Line%c[%s]".format(pos.c, line.collect {
+    override def toString = (if (negative) "!" else "") + "Line%c[%s]".format(pos.c, line.collect {
       case Item(el, n) => "%c[%s]".format((if (n) neg else pos).c, el)
     }.mkString(",   "))
 
@@ -39,18 +41,72 @@ object BraceEncloser {
 
     def getShared(that: Line): Option[Line] = {
       if (that.group == this.group) {
-        val shared = this.set intersect that.set
-        if (shared.size > 0) {
-          Some(Line(shared.toList, this.pos, this.neg, false))
-        } else {
-          None
+        for (
+          i <- 0 until this.line.size;
+          j <- 0 until that.line.size;
+          my = this.line(i);
+          his = that.line(j);
+          if my == his
+        ) yield {
+          val myWithOne = Line(this.line.updated(i, Item(Const(1), false)), this.pos, this.negative).optimize
+          val hisWithOne = Line(that.line.updated(j, Item(Const(1), false)), that.pos, that.negative).optimize
+          
+          val elements = (myWithOne.toElements ::: hisWithOne.toElements).tail
+          
+          val opt = applyLoop(optimizations)(elements)
+          
+          val withBraces = Expr(opt) :: (if(my.negative) Op('/') else Op('*')) :: my.el :: Nil
+          
+          
+          println("my [%s ]" format myWithOne.toElements)
+          println("his [%s ]" format hisWithOne.toElements)
+          println("all [%s ]" format opt)
+          println("braces [%s ]" format withBraces)
         }
+
+        null
       } else {
         None
       }
     }
 
-    def oposite = Line(line, pos, neg, !negative)
+    def optimize = {
+      val optimized1 = line.filterNot {
+        case Item(Const(1), true) => true
+        case _ => false
+      }
+
+      val optimized = if (optimized1.forall(!_.negative) || optimized1.size > 2) {
+        optimized1.filterNot {
+          case Item(Const(1), false) => true
+          case _ => false
+        }
+      } else optimized1
+
+      Line(optimized, pos, negative)
+    }
+
+    def oposite = Line(line, pos, !negative)
+
+    def -(that: Line) = {
+      require(this.pos == that.pos)
+      Line(line.filterNot(that.line.contains(_)), pos, negative)
+    }
+
+    def +(that: Line) = {
+      require(this.pos == that.pos)
+      Line(this.line ::: that.line, pos, negative)
+    }
+
+    def toElements = {
+      val tmp = line.flatMap(item => (if (item.negative) neg else pos) :: item.el :: Nil)
+      val res = if (negative) {
+        Op('-') :: Expr(tmp.tail) :: Nil
+      } else {
+        tmp
+      }
+      res
+    }
 
   }
 
@@ -71,7 +127,7 @@ object BraceEncloser {
       }
       require(withFirst.size % 2 == 0, "created line has wrong values [%s]".format(l))
       val tmpLine = withFirst.grouped(2).collect {
-        case (o: Op) :: el :: Nil => Item(el, el == neg)
+        case (o: Op) :: el :: Nil => Item(el, o == neg)
       }.toList
 
       (tmpLine, pos, neg)
@@ -79,13 +135,14 @@ object BraceEncloser {
 
     def apply(l: List[Element]) = {
       val (line, pos, neg) = convert(l)
-      new Line(line, pos, neg)
+      new Line(line, pos)
     }
 
     def apply(l: List[Element], b: Boolean) = {
       val (line, pos, neg) = convert(l)
-      new Line(line, pos, neg, b)
+      new Line(line, pos, b)
     }
+
   }
 
   //  def searchForAll(elements: List[Element]): Set[List[Element]] = {
@@ -100,25 +157,32 @@ object BraceEncloser {
         Line(list, neg)
       case x => throw new IllegalStateException("can not create sublines for [%s]".format(x))
     }.toList
-    
+
     println("ok")
 
     for (
       i <- 0 until subLines.size;
-      j <- i+1 until subLines.size;
+      j <- i + 1 until subLines.size;
       l1 = subLines(i);
       l2 = subLines(j)
     ) yield {
       val option = l1 getShared l2
       option match {
-        case Some(l: Line) => 
-          
+        case Some(shared: Line) =>
+          val r1 = l1 - shared
+          val r2 = l2 - shared
+          val enclosed = r1.toElements ::: r2.toElements
+          require(enclosed.head == Op('*'), "not a multiply, please implement it for [%s]".format(enclosed))
+          val woFirstOp = enclosed tail
+
+          val withShared = shared.toElements
+
           //TODO
+          woFirstOp
+        case _ => ":("
       }
-      option
 
     }
-    
 
   }
 
