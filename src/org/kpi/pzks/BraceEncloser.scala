@@ -39,9 +39,9 @@ object BraceEncloser {
     val group = pos.group
     def set = line.toSet
 
-    def getShared(that: Line): Option[Line] = {
+    def getShared(that: Line): Option[Seq[Expr]] = {
       if (that.group == this.group) {
-        for (
+        val shared = for (
           i <- 0 until this.line.size;
           j <- 0 until that.line.size;
           my = this.line(i);
@@ -57,14 +57,17 @@ object BraceEncloser {
           
           val withBraces = Expr(opt) :: (if(my.negative) Op('/') else Op('*')) :: my.el :: Nil
           
-          
+          println("D*********************")
           println("my [%s ]" format myWithOne.toElements)
           println("his [%s ]" format hisWithOne.toElements)
           println("all [%s ]" format opt)
           println("braces [%s ]" format withBraces)
+          println("/D*********************")
+          
+          Expr(withBraces)
         }
 
-        null
+        Some(shared)
       } else {
         None
       }
@@ -160,7 +163,7 @@ object BraceEncloser {
 
     println("ok")
 
-    for (
+    val all = for (
       i <- 0 until subLines.size;
       j <- i + 1 until subLines.size;
       l1 = subLines(i);
@@ -168,22 +171,25 @@ object BraceEncloser {
     ) yield {
       val option = l1 getShared l2
       option match {
-        case Some(shared: Line) =>
-          val r1 = l1 - shared
-          val r2 = l2 - shared
-          val enclosed = r1.toElements ::: r2.toElements
-          require(enclosed.head == Op('*'), "not a multiply, please implement it for [%s]".format(enclosed))
-          val woFirstOp = enclosed tail
-
-          val withShared = shared.toElements
-
-          //TODO
-          woFirstOp
-        case _ => ":("
+        case Some(sharedVariants: Seq[Expr]) =>
+          val lines = for(shared <- sharedVariants) yield{
+            
+            val q = mainLine.line
+            val filtered = q.filterNot{
+              case it:Item if it==q(i) => true
+              case it:Item if it==q(j) => true
+              case _ => false
+            }
+            
+            Line(Item(shared, false)::filtered, mainLine.pos, mainLine.negative)
+          }
+          lines.filterNot(_.isEmpty)
+        case _ => Vector()
       }
 
     }
-
+    
+    all.filterNot(_.isEmpty).flatten.map(x=> x.toElements.tail)
   }
 
   def createAllVariantsOfBraces(elements: List[Element]): Set[List[Element]] = {
