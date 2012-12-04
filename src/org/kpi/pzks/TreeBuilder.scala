@@ -350,7 +350,10 @@ object TreeBuilder extends App {
       case Expr(List(o: Op, e: Expr)) => List(o, e)
       case x => List(x)
     }
-    t.flatten
+    t.flatten  match{
+      case List(Expr(l)) => l
+      case x => x
+    }
   }
 
   def operate(c: Char, c1: Double, c2: Double) = {
@@ -404,6 +407,10 @@ object TreeBuilder extends App {
       }
     }
     
+    if(list.toString.contains("+q), +, b")){
+      println("thats it")
+    }
+    
     val tested = testFirst
     val start = if(tested==list)
       list 
@@ -430,7 +437,7 @@ object TreeBuilder extends App {
         case (el1: Element, o: Op, expr: Expr, l) => replaceNested(el1, o, expr, l, start)
       }
     } else {
-      return list
+      return start
     }
 
   }
@@ -567,15 +574,21 @@ object TreeBuilder extends App {
   def getString = {
     Source.fromFile("/tmp/input").getLines().next.trim
   }
-
-  val s = getString
-  val parsed = parseString(s)
-  val elements = groupElements(parsed, s)
+  
+  def getOpt(s:String)={
+    val parsed = parseString(s)
+    		val elements = groupElements(parsed, s)
   val simpleTree = buildSimpleTree(elements)
   println("simple tree")
   println(simpleTree)
 
   val optimized = applyLoop(optimizations)(simpleTree)
+  optimized
+  }
+
+  val s = getString
+  
+  val optimized = getOpt(s)
 //
 //  
 //  val testS = "b*(1+a)-3-y"
@@ -588,7 +601,8 @@ object TreeBuilder extends App {
 //  collectLoop(optimized)(createAllVariantsOfBraces).foreach(l => println(l.mkString))
   {
     import BraceEncloser._;
-    println(searchForAll(optimized))
+//    println(searchForAll(optimized))
+    collectLoop(optimized)(searchForAll).foreach(l => println(l.mkString))
   }
   println("braces ************");
   

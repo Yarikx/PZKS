@@ -28,7 +28,7 @@ object BraceEncloser {
     }
 
     override def toString = (if (negative) "!" else "") + "Line%c[%s]".format(pos.c, line.collect {
-      case Item(el, n) => "%c[%s]".format((if (n) neg else pos).c, el)
+      case Item(el, n) => "%c[%s]".format((if (n) '-' else '+'), el)
     }.mkString(",   "))
 
     def compare(that: Line) = {
@@ -58,7 +58,7 @@ object BraceEncloser {
           val withBraces = Expr(opt) :: (if(my.negative) Op('/') else Op('*')) :: my.el :: Nil
           
           println("D*********************")
-          println("my [%s ]" format myWithOne.toElements)
+          println("my [%s ]" format myWithOne)
           println("his [%s ]" format hisWithOne.toElements)
           println("all [%s ]" format opt)
           println("braces [%s ]" format withBraces)
@@ -106,7 +106,7 @@ object BraceEncloser {
       val res = if (negative) {
         Op('-') :: Expr(tmp.tail) :: Nil
       } else {
-        tmp
+        Op('+') :: Expr(tmp.tail) :: Nil
       }
       res
     }
@@ -189,7 +189,10 @@ object BraceEncloser {
 
     }
     
-    all.filterNot(_.isEmpty).flatten.map(x=> x.toElements.tail)
+    val qqq = all.filterNot(_.isEmpty).flatten.map(x=> x.toElements.tail).map(_.map(_.asInstanceOf[Element])).toSet
+    val vvv = qqq.map(applyLoop(applyAll(colapseUnariExp, fixNested))(_))
+    
+    vvv
   }
 
   def createAllVariantsOfBraces(elements: List[Element]): Set[List[Element]] = {
