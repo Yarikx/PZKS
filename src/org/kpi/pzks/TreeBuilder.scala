@@ -603,6 +603,7 @@ object TreeBuilder extends App {
     import BraceEncloser._;
 //    println(searchForAll(optimized))
     collectLoop(optimized)(searchForAll).foreach(l => println(l.mkString))
+//    println(searchForAll(optimized))
   }
   println("braces ************");
   

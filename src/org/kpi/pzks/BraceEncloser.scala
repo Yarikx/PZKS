@@ -28,7 +28,7 @@ object BraceEncloser {
     }
 
     override def toString = (if (negative) "!" else "") + "Line%c[%s]".format(pos.c, line.collect {
-      case Item(el, n) => "%c[%s]".format((if (n) '-' else '+'), el)
+      case Item(el, n) => "%c[%s]".format((if (n) neg else pos).c, el)
     }.mkString(",   "))
 
     def compare(that: Line) = {
@@ -57,12 +57,12 @@ object BraceEncloser {
           
           val withBraces = Expr(opt) :: (if(my.negative) Op('/') else Op('*')) :: my.el :: Nil
           
-          println("D*********************")
-          println("my [%s ]" format myWithOne)
-          println("his [%s ]" format hisWithOne.toElements)
-          println("all [%s ]" format opt)
-          println("braces [%s ]" format withBraces)
-          println("/D*********************")
+//          println("D*********************")
+//          println("my [%s ]" format myWithOne.toElements)
+//          println("his [%s ]" format hisWithOne.toElements)
+//          println("all [%s ]" format opt)
+//          println("braces [%s ]" format withBraces)
+//          println("/D*********************")
           
           Expr(withBraces)
         }
@@ -106,7 +106,7 @@ object BraceEncloser {
       val res = if (negative) {
         Op('-') :: Expr(tmp.tail) :: Nil
       } else {
-        Op('+') :: Expr(tmp.tail) :: Nil
+        tmp
       }
       res
     }
@@ -114,6 +114,14 @@ object BraceEncloser {
   }
 
   object Line {
+    
+    
+    def isGoodForLine(l: List[Element])={
+      val group = l.collect {
+        case o: Op => o
+      }.distinct.map(_.group).distinct
+      group.size == 1
+    }
 
     def convert(l: List[Element]) = {
       val group = l.collect {
@@ -149,8 +157,12 @@ object BraceEncloser {
   }
 
   //  def searchForAll(elements: List[Element]): Set[List[Element]] = {
-  def searchForAll(elements: List[Element]) = {
+  def searchForAll(elements: List[Element]): Set[List[Element]] = {
 
+    if(!Line.isGoodForLine(elements)){
+      return Set(elements)
+    }
+    
     val mainLine = Line(elements)
     val g = mainLine.group
     val subLines = mainLine.map {
@@ -158,7 +170,8 @@ object BraceEncloser {
       case Item(e: Element, neg) =>
         val list = e :: Op('*') :: Const(1) :: Nil
         Line(list, neg)
-      case x => throw new IllegalStateException("can not create sublines for [%s]".format(x))
+      case x => return Set(elements)
+//      case x => throw new IllegalStateException("can not create sublines for [%s]".format(x))
     }.toList
 
     println("ok")
@@ -189,56 +202,7 @@ object BraceEncloser {
 
     }
     
-    val qqq = all.filterNot(_.isEmpty).flatten.map(x=> x.toElements.tail).map(_.map(_.asInstanceOf[Element])).toSet
-    val vvv = qqq.map(applyLoop(applyAll(colapseUnariExp, fixNested))(_))
-    
-    vvv
-  }
-
-  def createAllVariantsOfBraces(elements: List[Element]): Set[List[Element]] = {
-    val mainSet = elements.zip(elements.indices).flatMap(tuple => {
-      val (element, i) = tuple
-      val oneSet = element match {
-        case Expr(list) => {
-          val variants = createAllVariantsOfBraces(list)
-          //TODO fix expressions like a*(b*c) => a*b*c
-          val qq = variants.map(x => elements.updated(i, Expr(x)))
-          qq
-        }
-        case x: Element => Set[List[Element]]()
-      }
-      oneSet
-    }).toSet
-
-    val result = ((mainSet + elements).flatMap(createDifVariants).toSet + elements).map(x => applyLoop(applyAll(fixNested))(x))
-    result
-  }
-
-  def createDifVariants(list: List[Element]) = {
-    val sliding = list.sliding(3).toList
-    val zipped = sliding zip sliding.indices
-    val found = zipped.filter(tuple => {
-      val (window, index) = tuple
-      window match {
-        case Seq(e: Element, o: Op, expr: Expr) if (o.group == 1) => true
-        case Seq(expr: Expr, o: Op, e: Element) if (o.group == 1) => true
-        case _ => false
-      }
-    })
-
-    val f = found.collect {
-      case (Seq(e: Element, o: Op, expr: Expr), i) if (o.c == '*') => list.patch(i, unbrace(e, o, expr), 3)
-      case (Seq(expr: Expr, o: Op, e: Element), i) if (o.group == 1) => list.patch(i, unbrace(e, o, expr), 3)
-    }.toSet
-    (f + list).map(colapseUnariExp)
-  }
-
-  def unbrace(e: Element, o: Op, expr: Expr) = {
-    val opened: List[Element] = expr.elements.map({
-      case op: Op => op
-      case el: Element => Expr(List(el, o, e))
-    })
-    List(Expr(opened))
+    all.filterNot(_.isEmpty).flatten.map(x=> x.toElements.tail).toSet+elements
   }
 
 }

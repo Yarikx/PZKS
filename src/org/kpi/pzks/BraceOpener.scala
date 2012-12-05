@@ -55,7 +55,7 @@ object BraceOpener {
       val res = lists.flatMap(x => f(x).map(applyLoop(optimizations)(_))).toSet
 //      val res = lists.flatMap(x => f(x)).toSet
       res.foreach(println)
-      println("*****************************")
+      println("---**************************")
       if(res == lists){
         res
       }else{
