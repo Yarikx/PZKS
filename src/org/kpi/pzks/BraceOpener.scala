@@ -4,6 +4,8 @@ import org.kpi.pzks.TreeBuilder._;
 
 object BraceOpener {
 
+  val createAllVariantsOfBracesMem = memoize(createAllVariantsOfBraces)
+  
   def createAllVariantsOfBraces(elements: List[Element]): Set[List[Element]] = {
     val mainSet = elements.zip(elements.indices).flatMap(tuple => {
       val (element, i) = tuple

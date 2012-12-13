@@ -585,6 +585,11 @@ object TreeBuilder extends App {
   val optimized = applyLoop(optimizations)(simpleTree)
   optimized
   }
+  
+  def memoize[A, B](f: A => B) = new (A => B) {
+    val cache = scala.collection.mutable.Map[A, B]()
+    def apply(x: A): B = cache.getOrElseUpdate(x, f(x))
+  }
 
   val s = getString
   
@@ -598,7 +603,7 @@ object TreeBuilder extends App {
 //  val test = b
   
   println("braces ************");
-  collectLoop(optimized)(createAllVariantsOfBraces).foreach(l => println(l.mkString))
+  collectLoop(optimized)(createAllVariantsOfBracesMem).foreach(l => println(l.mkString))
 //  {
 //    import BraceEncloser._;
 ////    println(searchForAll(optimized))
@@ -606,6 +611,8 @@ object TreeBuilder extends App {
 ////    println(searchForAll(optimized))
 //  }
   println("braces ************");
+  
+  
   
   
 
