@@ -27,6 +27,7 @@ trait Negativable extends Element{
   def neg:Element
   def isNegative:Boolean
 }
+
 case class Op(c: Char) extends Element {
   def group = TreeBuilder.getGroup(this)
   override def toString = c.toString
