@@ -307,7 +307,7 @@ object TreeBuilder extends App {
   def replaceConstants(list: List[Element]): List[Element] ={
     val operations = list.collect({case o:Op => o}).distinct
     val sameOp = operations.size == 1
-    if(!sameOp){
+    if(!sameOp || operations(0).c=='-'){
       return list
     }
     val operands = list.filter({
@@ -607,9 +607,10 @@ object TreeBuilder extends App {
 //  collectLoop(optimized)(createAllVariantsOfBracesMem).foreach(l => println(l.mkString))
   {
     import BraceEncloser._;
-    println(searchForAll(optimized))
+//    println(searchForAll(optimized))
+    println("optimized=%s" format optimized)
     collectLoop(optimized)(searchForAll).foreach(l => println(l.mkString))
-    println(searchForAll(optimized))
+//    println(searchForAll(optimized))
   }
   println("braces ************");
   
@@ -620,7 +621,7 @@ object TreeBuilder extends App {
 //  val paired = applyToAll(pair)(optimized)
 
 //  println(s)
-  println("pair")
+//  println("pair")
 //  println(paired)
 //  buildGraphWizFile(Expr(paired))
 }
