@@ -603,13 +603,13 @@ object TreeBuilder extends App {
 //  val test = b
   
   println("braces ************");
-  collectLoop(optimized)(createAllVariantsOfBracesMem).foreach(l => println(l.mkString))
-//  {
-//    import BraceEncloser._;
-////    println(searchForAll(optimized))
-////    collectLoop(optimized)(searchForAll).foreach(l => println(l.mkString))
-////    println(searchForAll(optimized))
-//  }
+//  collectLoop(optimized)(createAllVariantsOfBracesMem).foreach(l => println(l.mkString))
+  {
+    import BraceEncloser._;
+    println(searchForAll(optimized))
+    collectLoop(optimized)(searchForAll).foreach(l => println(l.mkString))
+    println(searchForAll(optimized))
+  }
   println("braces ************");
   
   

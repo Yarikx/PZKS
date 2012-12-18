@@ -79,17 +79,22 @@ object BraceEncloser {
     }
 
     def optimize = {
-      val optimized1 = line.filterNot {
-        case Item(Const(1), true) => true
-        case _ => false
+      val optimized1 = line.filter {
+        case Item(Const(1), true) => false
+        case _ => true
       }
 
       val optimized = if (optimized1.forall(!_.negative) || optimized1.size > 2) {
-        optimized1.filterNot {
-          case Item(Const(1), false) => true
-          case _ => false
+        optimized1.filter {
+          case Item(Const(1), false) => false
+          case _ => true
+        } match{
+          case Nil => List(Item(Const(1),false))
+          case x => x
         }
       } else optimized1
+      
+//      val optimized = optimized1
 
       Line(optimized, pos, negative)
     }
