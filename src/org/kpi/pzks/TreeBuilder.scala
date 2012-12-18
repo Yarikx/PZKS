@@ -20,6 +20,7 @@ import org.kpi.pzks.Parser.Operation
 import org.kpi.pzks.Parser.Symbols
 import org.kpi.pzks.Parser.TailDigits
 import org.kpi.pzks.Parser.parseString
+import BraceEncloser._;
 
 class Element;
 
@@ -604,14 +605,12 @@ object TreeBuilder extends App {
 //  val test = b
   
   println("braces ************");
-//  collectLoop(optimized)(createAllVariantsOfBracesMem).foreach(l => println(l.mkString))
-  {
-    import BraceEncloser._;
-//    println(searchForAll(optimized))
-    println("optimized=%s" format optimized)
-    collectLoop(optimized)(searchForAll).foreach(l => println(l.mkString))
-//    println(searchForAll(optimized))
-  }
+
+  val op1 = collectLoop(optimized)(createAllVariantsOfBracesMem) //.foreach(l => println(l.mkString))
+  val op2 = collectLoop(optimized)(searchForAll) //.foreach(l => println(l.mkString))
+  
+  val all = op1 ++ op2
+  all.foreach(println)
   println("braces ************");
   
   
