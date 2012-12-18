@@ -21,6 +21,7 @@ import org.kpi.pzks.Parser.Symbols
 import org.kpi.pzks.Parser.TailDigits
 import org.kpi.pzks.Parser.parseString
 import BraceEncloser._;
+import GraphTool._;
 
 class Element;
 
@@ -446,27 +447,6 @@ object TreeBuilder extends App {
 
   //other
 
-  def pair(list: List[Element]): List[Element] = {
-    if (Expr(list).isPure) {
-      list
-    } else {
-      val (start, rest) = list.splitAt(3);
-      val exp = Expr(start)
-      //TODO add check
-      val end = if (rest.size > 3) {
-        val exTail = Expr(rest tail)
-        if (exTail isPure) {
-          List(rest.head, exTail)
-        } else {
-          rest.head :: pair(rest.tail)
-        }
-      } else {
-        rest
-      }
-      exp :: end
-    }
-  }
-
   def applyLoop(f: (List[Element]) => List[Element])(list: List[Element]): List[Element] = {
     def recur(l: List[Element]): List[Element] = {
       val q = f(l)
@@ -478,64 +458,8 @@ object TreeBuilder extends App {
     }
     recur(list)
   }
-
-  def buildGraphWizFile(e: Expr): File = {
-    import sys.process._
-    val rnd = new Random;
-    val map = Map[Element, Int]()
-    val buf = new StringBuilder("graph foo{");
-
-    class El(val id: Int)
-    case class Oper(c: Char, l: El, r: El) extends El(rnd.nextInt(1000000))
-    case class Val(s: String) extends El(rnd.nextInt(1000000))
-
-    def convert(e: Element): El = e match {
-      case v:Var => Val(v.toString)
-      case Const(x) => Val(x.toString)
-      case Expr(List(ql:Element, Op(o), qr:Element)) =>
-        Oper(o, convert(ql), convert(qr))
-      case Expr(List(e:Element)) => convert(e)
-      case x => throw new IllegalStateException("Wrong expression format for building binary tree")
-    }
-    
-    def up(exp:Expr):Element={
-      exp match{
-        case Expr(List(ex: Expr)) => up(ex)
-        case elem:Element => elem
-      }
-    }
-
-    val checked = up(e)
-
-    val converted = convert(checked)
-    def buildLinks(ex: El) {
-
-      ex match {
-        case v @ Val(s) =>
-          buf ++= "el%d [label=\"%s\"]\n".format(v.id, s)
-        case o @ Oper(c, l, r) =>
-          buf ++= "el%d [label=\"%c\"]\n".format(o.id, c)
-          buf ++= "el%d -- el%d\n".format(o.id, l.id)
-          buf ++= "el%d -- el%d\n".format(o.id, r.id)
-          buildLinks(l)
-          buildLinks(r)
-
-      }
-    }
-    buildLinks(converted)
-    buf ++= "}"
-
-    val q = new FileOutputStream(new File("/tmp/example.dot"))
-    q.write(buf.toString.map(_.toByte).toArray)
-    q.close()
-
-    Runtime.getRuntime().exec("rm /tmp/qwe.png").waitFor()
-    Runtime.getRuntime().exec("rm /tmp/example.png").waitFor()
-    Runtime.getRuntime().exec("dot -Tpng -o /tmp/qwe.png /tmp/example.dot ").waitFor()
-    Runtime.getRuntime().exec("eog /tmp/qwe.png")
-
-    null
-  }
+  
+  
 
   def applyAll(fs: (List[Element]) => List[Element]*)(list: List[Element]) = {
     fs.foldLeft(list)((el, f) => applyToAll(f)(el))
@@ -609,8 +533,10 @@ object TreeBuilder extends App {
   val op1 = collectLoop(optimized)(createAllVariantsOfBracesMem) //.foreach(l => println(l.mkString))
   val op2 = collectLoop(optimized)(searchForAll) //.foreach(l => println(l.mkString))
   
-  val all = op1 ++ op2
-  all.foreach(println)
+  val all = (op1 ++ op2).toList
+//  all.foreach(println)
+  println(Expr(all(1)))
+  buildGraphWizFile(Expr(all(1)))
   println("braces ************");
   
   
