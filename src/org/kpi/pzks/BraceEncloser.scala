@@ -51,7 +51,12 @@ object BraceEncloser {
           val myWithOne = Line(this.line.updated(i, Item(Const(1), false)), this.pos, this.negative).optimize
           val hisWithOne = Line(that.line.updated(j, Item(Const(1), false)), that.pos, that.negative).optimize
           
-          val elements = (myWithOne.toElements ::: hisWithOne.toElements).tail
+          val hh = hisWithOne.toElements match{
+            case Op('*')::rest => Op('+')::rest
+            case Op('+')::rest => Op('+')::rest
+            case x => x
+          }
+          val elements = (myWithOne.toElements ::: hh).tail
           
           val opt = applyLoop(optimizations)(elements)
           
@@ -104,6 +109,9 @@ object BraceEncloser {
     def toElements = {
       val tmp = line.flatMap(item => (if (item.negative) neg else pos) :: item.el :: Nil)
       val res = if (negative) {
+        if(tmp.isEmpty || tmp.size==1){
+          println("d")
+        }
         Op('-') :: Expr(tmp.tail) :: Nil
       } else {
         tmp
