@@ -536,6 +536,8 @@ object TreeBuilder extends App {
   val all = (op1 ++ op2).toList
 //  all.foreach(println)
   println(Expr(all(1)))
+  println("****leafs***")
+  getLeafs(getBinaryTree(Expr(all(1)))).foreach(println)
   buildGraphWizFile(Expr(all(1)))
   println("braces ************");
   
