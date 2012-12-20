@@ -572,7 +572,7 @@ object TreeBuilder extends App {
     replaceConstants
     ) _
     
-  def getString = {
+  def getString() = {
     Source.fromFile("/tmp/input").getLines().next.trim
   }
   
@@ -592,7 +592,7 @@ object TreeBuilder extends App {
     def apply(x: A): B = cache.getOrElseUpdate(x, f(x))
   }
 
-  val s = getString
+  val s = getString()
   
   val optimized = getOpt(s)
 //
