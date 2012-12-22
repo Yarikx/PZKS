@@ -57,18 +57,18 @@ object GraphTool {
     val converted = convert(checked)
     converted
   }
-
-  def buildGraphWizFile(e: Expr): File = {
-
+  
+  def drawTree(el:El){
+    
     val map = Map[Element, Int]()
     val buf = new StringBuilder("graph foo{");
-
+    
     def buildLinks(ex: El) {
-      
-
       ex match {
         case v @ Val(s) =>
           buf ++= "el%d [label=\"%s\"]\n".format(v.id, s)
+        case p @ Progress(init, len) =>
+          buf ++= "el%d [label=\"progress %s, %s\"]\n".format(p.id, init, len)
         case o @ Oper(c, l, r) =>
           buf ++= "el%d [label=\"%c\"]\n".format(o.id, c)
           buf ++= "el%d -- el%d\n".format(o.id, l.id)
@@ -79,8 +79,7 @@ object GraphTool {
       }
     }
     
-    val converted = getBinaryTree(e)
-    buildLinks(converted)
+    buildLinks(el)
     buf ++= "}"
 
     val q = new FileOutputStream(new File("/tmp/example.dot"))
@@ -92,7 +91,16 @@ object GraphTool {
     Runtime.getRuntime().exec("dot -Tpng -o /tmp/qwe.png /tmp/example.dot ").waitFor()
     Runtime.getRuntime().exec("eog /tmp/qwe.png")
 
-    null
+  }
+
+  def buildGraphWizFile(e: Expr){
+
+    
+
+    
+    
+    val converted = getBinaryTree(e)
+    drawTree(converted)
   }
   
   def getLeafs(el:El):List[Oper]={
@@ -102,4 +110,30 @@ object GraphTool {
       case Oper(_, l,r) => getLeafs(l):::getLeafs(r)
     }
   }
+  
+  case class Progress(init: Int, len: Int) extends El(rnd.nextInt(1000000))
+  
+  
+  def removeLeaf(el:El, leaf: Oper, p: Progress)={
+    def rm(elem: El):El={
+      elem match{
+        case o:Oper if o.id == leaf.id => p
+        case Oper(c, l, r) =>
+          val ll = l match{
+            case op:Oper => rm(op)
+            case any => any
+          }
+          val rr = r match{
+            case op:Oper => rm(op)
+            case any => any
+          }
+          Oper(c, ll, rr)
+        case x => x
+      }
+    }
+    
+    rm(el)
+  }
+  
+   
 }
