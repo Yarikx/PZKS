@@ -135,5 +135,17 @@ object GraphTool {
     rm(el)
   }
   
+  def replaceProgress(el:El, time:Int)={
+    def replace(elem: El):El={
+      elem match{
+        case p:Progress if p.init+p.len < time => Val("calculated")
+        case Oper(c, l, r) =>
+          Oper(c, replace(l), replace(r))
+        case x => x
+      }
+    }
+    
+    replace(el)
+  }
    
 }

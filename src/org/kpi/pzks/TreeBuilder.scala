@@ -541,8 +541,9 @@ object TreeBuilder extends App {
   val tree = getBinaryTree(exp)
   val leafs = getLeafs(tree)
   val tree2 =  removeLeaf(tree, leafs(0), Progress(3,5))
+  val tree3 = replaceProgress(tree2, 20)
   
-  drawTree(tree2)
+  drawTree(tree3)
   println("braces ************");
   
   
