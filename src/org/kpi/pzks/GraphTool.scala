@@ -15,7 +15,7 @@ object GraphTool {
 
   class El(val id: Int){
     def leafs = getLeafs(this)
-    def replace(implicit time:Int) = replaceProgress(this, time)
+    def replace(leaf:Oper) = replaceProgress(this, leaf)
     def rm(leaf:Oper, p:Progress) = removeLeaf(this, leaf, p)
   }
   case class Oper(c: Char, l: El, r: El) extends El(rnd.nextInt(1000000)){
@@ -83,8 +83,8 @@ object GraphTool {
       ex match {
         case v @ Val(s) =>
           buf ++= "el%d [label=\"%s\"]\n".format(v.id, s)
-        case p @ Progress(init, len) =>
-          buf ++= "el%d [label=\"progress %s, %s\"]\n".format(p.id, init, len)
+        case p @ Progress(o) =>
+          buf ++= "el%d [label=\"progress %s\"]\n".format(p.id, o)
         case o @ Oper(c, l, r) =>
           buf ++= "el%d [label=\"%c\"]\n".format(o.id, c)
           buf ++= "el%d -- el%d\n".format(o.id, l.id)
@@ -123,7 +123,7 @@ object GraphTool {
     }
   }
   
-  case class Progress(init: Int, len: Int) extends El(rnd.nextInt(1000000))
+  case class Progress(op:Oper) extends El(rnd.nextInt(1000000))
   
   
   def removeLeaf(el:El, leaf: Oper, p: Progress)={
@@ -147,10 +147,10 @@ object GraphTool {
     rm(el)
   }
   
-  def replaceProgress(el:El, time:Int)={
+  def replaceProgress(el:El, leaf:Oper)={
     def replace(elem: El):El={
       elem match{
-        case p:Progress if p.init+p.len < time => Val("calculated")
+        case Progress(o) if o==leaf => Val("calculated")
         case Oper(c, l, r) =>
           Oper(c, replace(l), replace(r))
         case x => x
@@ -172,16 +172,15 @@ object GraphTool {
     while(run){
       val leafs = tree.leafs
       
+      current(N-1) foreach(oper => tree = tree.replace(oper))
+      
       for(i <- (1 to N-1).reverse){
         current(i) = current(i-1)
       }
       current(0) = None
       
       val leaf = leafs.headOption
-      leaf match{
-        case Some(l) => tree = tree.rm(l, Progress(time, l.value))
-        case _ =>
-      }
+      leaf foreach(l => tree = tree.rm(l, Progress(l)))
       
       println("current leaf = "+leaf)
       current(0) = leaf
@@ -204,7 +203,6 @@ object GraphTool {
       }
       
       time+=step
-      tree = tree.replace
       if(time >= 100 || tree.isInstanceOf[Val]) run = false
     }
     
