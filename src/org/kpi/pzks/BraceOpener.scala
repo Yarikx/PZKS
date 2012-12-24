@@ -61,8 +61,8 @@ object BraceOpener {
       val res = toCalculate.flatMap(x => f(x).map(applyLoop(optimizations)(_))).toSet -- calced
       val calced2 = calced ++ toCalculate
 //      val res = lists.flatMap(x => f(x)).toSet
-      res.foreach(println)
-      println("---**************************")
+//      res.foreach(println)
+//      println("---**************************")
       if(res.isEmpty){
         calced2.map(applyLoop(optimizations)(_))
       }else{

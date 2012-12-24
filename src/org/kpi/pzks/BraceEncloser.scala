@@ -46,10 +46,14 @@ object BraceEncloser {
           j <- 0 until that.line.size;
           my = this.line(i);
           his = that.line(j);
-          if my == his
+          if my == his;
+          if my != Item(Const(1.0), false)
         ) yield {
           val myWithOne = Line(this.line.updated(i, Item(Const(1), false)), this.pos, this.negative).optimize
           val hisWithOne = Line(that.line.updated(j, Item(Const(1), false)), that.pos, that.negative).optimize
+          
+          println("opa opa"+myWithOne)
+          println("opa opa"+hisWithOne)
           
           val hh = hisWithOne.toElements match{
             case Op('*')::rest => Op('+')::rest
@@ -114,9 +118,6 @@ object BraceEncloser {
     def toElements = {
       val tmp = line.flatMap(item => (if (item.negative) neg else pos) :: item.el :: Nil)
       val res = if (negative) {
-        if(tmp.isEmpty || tmp.size==1){
-          println("d")
-        }
         Op('-') :: Expr(tmp.tail) :: Nil
       } else {
         tmp
@@ -187,7 +188,6 @@ object BraceEncloser {
 //      case x => throw new IllegalStateException("can not create sublines for [%s]".format(x))
     }.toList
 
-    println("ok")
 
     val all = for (
       i <- 0 until subLines.size;

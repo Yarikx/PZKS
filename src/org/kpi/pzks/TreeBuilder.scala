@@ -528,23 +528,45 @@ object TreeBuilder extends App {
 //    println(createDifVariants(test).map(x => applyLoop(applyAll(fixNested))(x)))
 //  val test = b
   
-  println("braces ************");
 
   val op1 = collectLoop(optimized)(createAllVariantsOfBracesMem) //.foreach(l => println(l.mkString))
   val op2 = collectLoop(optimized)(searchForAll) //.foreach(l => println(l.mkString))
   
   val all = (op1 ++ op2).toList
+//  println("optimized %s" format op2)
+  println("***all results***")
 //  all.foreach(println)
-  val exp = Expr(all(1))
-  println(" expr = " + exp)
-  println("****leafs***")
-  val tree = getBinaryTree(exp)
+//  println("***")
+//  all.foreach(println)
+////  val exp = Expr(all(1))
+//  println(" expr = " + exp)
+//  println("****leafs***")
+//  val tree = getBinaryTree(exp)
   
+//  drawTree(tree)
+  
+  
+  
+  val N = 3;
+  val min = all.minBy[Int]{qqq =>{
+	  val exp = Expr(qqq)
+	  val tree = getBinaryTree(exp)
+	  println("testing %s" format tree)
+    val z = buildProc(tree, N,false)
+    z
+  	}
+  }
+  
+  println("min = [ %s ]" format min)
+  println("paired %s".format(applyToAll(pair)(min)))  
+  
+  val tree = getBinaryTree(Expr(min))
   drawTree(tree)
-  
-  buildProc(tree, 3)
-  
-  println("braces ************");
+  buildProc(tree, N, true)
+//  
+//  
+//  
+//  println("braces ************");
   
   
   

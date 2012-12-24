@@ -31,6 +31,9 @@ object GraphTool {
   case class Val(s: String) extends El(rnd.nextInt(1000000))
 
   def pair(list: List[Element]): List[Element] = {
+    if(Expr(list).toString.contains(".0*a)+(a*b)-((c*d)+b)+b+b+b")){
+      println("asdf")
+    }
     if (Expr(list).isPure) {
       list
     } else {
@@ -42,12 +45,22 @@ object GraphTool {
         if (exTail isPure) {
           List(rest.head, exTail)
         } else {
+//          val ttail = pair(rest.tail) match{
+//            case l@List(e:Expr) => l
+//            case l => Expr(l)::Nil
+//          }
+//          rest.head :: ttail
           rest.head :: pair(rest.tail)
         }
       } else {
         rest
       }
-      exp :: end
+      val res = exp :: end
+      if(Expr(res).isPure){
+        res
+      }else{
+        pair(res)
+      }
     }
   }
 
@@ -57,7 +70,8 @@ object GraphTool {
     case Expr(List(ql: Element, Op(o), qr: Element)) =>
       Oper(o, convert(ql), convert(qr))
     case Expr(List(e: Element)) => convert(e)
-    case x => throw new IllegalStateException("Wrong expression format for building binary tree [%s]" format x)
+    case x => 
+      throw new IllegalStateException("Wrong expression format for building binary tree [%s]" format x)
   }
 
   def up(exp: Expr): Element = {
@@ -129,7 +143,7 @@ object GraphTool {
     def rm(elem: El): El = {
       elem match {
         case o: Oper if o.id == leaf.id => p
-        case Oper(c, l, r) =>
+        case ooo@Oper(c, l, r) =>
           val ll = l match {
             case op: Oper => rm(op)
             case any => any
@@ -138,7 +152,10 @@ object GraphTool {
             case op: Oper => rm(op)
             case any => any
           }
-          Oper(c, ll, rr)
+          if(ll.eq(l) && rr.eq(r)){
+            ooo
+          }else
+        	  Oper(c, ll, rr)
         case x => x
       }
     }
@@ -168,16 +185,18 @@ object GraphTool {
 
     implicit var time = 0
     while (run) {
-      val leafs = tree.leafs
+      
 
       current(N - 1) foreach (oper => tree = tree.replace(oper))
+      val leafs = tree.leafs
 
       for (i <- (1 to N - 1).reverse) {
         current(i) = current(i - 1)
       }
       current(0) = None
 
-      val leaf = leafs.headOption
+      val leaf = getBestLeaf(leafs, current(1))
+      
       leaf foreach (l => tree = tree.rm(l, Progress(l)))
 
       if(print) println("current leaf = " + leaf)
@@ -186,7 +205,8 @@ object GraphTool {
         case Some(o) => o.value
         case None => 0
       }.reduce(scala.math.max)
-      if (print) println("step = " + step)
+      if (print) 
+        println("step = " + step)
 
       for (
         i <- 0 until N;
@@ -213,7 +233,29 @@ object GraphTool {
         })
       }
     }
-
+    time
+  }
+  
+  def getBestLeaf(leafs:List[Oper], opt: Option[Oper]):Option[Oper]={
+    val grouped = leafs.groupBy(_.c)
+    opt match{
+      case Some(op) => 
+        val g = grouped.get(op.c)
+        g match{
+          case Some(gg) => return gg.headOption
+          case None => 
+        }
+        
+      case None => 
+        
+        List('/', '*', '+', '-').foreach{c =>
+          val p = grouped.get(c)
+          p.foreach{qq => return qq.headOption}
+        }
+    }
+    
+    leafs.headOption
+    
   }
 
 }
