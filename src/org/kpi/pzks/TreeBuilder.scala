@@ -548,13 +548,11 @@ object TreeBuilder extends App {
   
   
   val N = 3;
-  val min = all.minBy[Int]{qqq =>{
+  val min = all.minBy[Int]{qqq =>
 	  val exp = Expr(qqq)
 	  val tree = getBinaryTree(exp)
 	  println("testing %s" format tree)
-    val z = buildProc(tree, N,false)
-    z
-  	}
+      buildProc(tree, N,false)
   }
   
   println("min = [ %s ]" format min)
